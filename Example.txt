@@ -1,0 +1,53 @@
+# -------------------------------------------------------
+# "Differential Entropy Estimation with a Paretian Kernel:
+#  Tail Heaviness and Smoothing"
+# 
+# R functions for estimating differential entropy
+# of heavy-tailed unidimensional data
+#
+# -------------------------------------------------------
+# last update: 24/Apr/2024
+# 
+# Raul Matsushita
+# Sergio Da Silva
+# Helena S. Brandao
+# Iuri Ribeiro Nobre
+# ------------------------------------------------------------
+
+
+# ========================================================
+# Set the working folder and load our library
+# ========================================================
+setwd("C:/Users/raulm/OneDrive/XPS/_Pesquisas/DifferentialEntropyEstimation/R")
+source("EntropyEstimationParetoKernel.R")
+# ========================================================
+
+# Example
+set.seed(81348540)
+
+# Actual differential entropy of a Student's t distribution with gl degrees of freedom
+gl     <- 10
+H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
+# ------------------------------------------
+
+# Get a sample of n.size from a Student's t distribution with gl degrees of freedom
+n.size <- 500
+x      <- rt(n.size, df=gl)
+h.max  <- 50
+# differential entropy estimate with Gaussian kernel
+h.G   <- optimize(Entropy.G, x.var=x, lower=0, upper=h.max)
+# differential entropy estimate with Cauchy kernel
+h.C   <- optimize(Entropy.C, x.var=x, lower=0, upper=h.max)
+# differential entropy estimate with Laplace kernel
+h.L   <- optimize(Entropy.L, x.var=x, lower=0, upper=h.max)
+# differential entropy estimate with Paretian kernel
+h.P   <- optim(Entropy.P, par = c(0.5,1), x.var = x)
+
+alpha <- h.P$par[1]
+h     <- h.P$par[2]
+
+# result: 
+names     <- c("True", "Gaussian", "Laplace", "Cauchy", "Pareto", "NND", "SS")
+estimates <- c(H.true,h.G$objective,h.L$objective,h.C$objective,h.P$value, H.NND(x), H.SSM(x))
+
+data.frame(type = names,estimates)
