@@ -1,0 +1,162 @@
+---
+title: "main"
+output: html_document
+---
+
+# Reproduzindo o código original
+
+```{r}
+
+# Código original - Professor Raul
+# (Eu identei inteiro para ler melhor)
+source("EntropyEstimationParetoKernel.R")
+```
+
+```{r}
+set.seed(40028922)
+```
+
+```{r}
+# Actual differential entropy of a Student's t distribution with gl degrees of freedom
+gl     <- 10
+H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
+```
+
+```{r}
+# Get a sample of n.size from a Student's t distribution with gl degrees of freedom
+n.size <- 500
+x      <- rt(n.size, df = gl)
+h.max  <- 50
+
+# differential entropy estimate with Gaussian kernel
+h.G <- optimize(function(h) Entropy.G(x.var = x, h = h), lower = 0, upper = h.max)
+
+# differential entropy estimate with Cauchy kernel
+h.C <- optimize(function(h) Entropy.C(x.var = x, h = h), lower = 0, upper = h.max)
+
+# differential entropy estimate with Laplace kernel
+h.L <- optimize(function(h) Entropy.L(x.var = x, h = h), lower = 0, upper = h.max)
+
+# differential entropy estimate with Paretian kernel
+h.P <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = x, par = par))
+```
+
+```{r}
+
+alpha <- h.P$par[1]
+h     <- h.P$par[2]
+
+print(h)
+print(alpha)
+```
+
+## Resultado
+
+```{r}
+names     <- c("True", "Gaussian", "Laplace", "Cauchy", "Pareto", "NND", "SS")
+estimates <- c(H.true, h.G$objective, h.L$objective, h.C$objective, h.P$value, H.NND(x), H.SSM(x))
+```
+
+```{r}
+data.frame(type = names, estimates)
+```
+
+# Novas Simulações de Monte Carlo
+
+***Título***
+
+*"Cauda e suavização na estimação de entropia: uma análise do trade-off em estimação de densidades pelo método do kernel"*
+
+***Resumo***
+
+*A estimação de entropia diferencial envolve um trade-off fundamental entre suavização e representação das caudas. Métodos baseados em KDE frequentemente utilizam kernels leves, que podem falhar ao capturar eventos extremos. Neste trabalho, investigamos como diferentes classes de kernels (leves, pesados e intermediários) afetam esse trade-off. Com base em um estudo de Monte Carlo, analisamos o comportamento da função de validação cruzada e sua sensibilidade à estrutura de cauda da distribuição. Os resultados evidenciam que kernels pesados estabilizam a função objetivo e reduzem as descontinuidades, enquanto kernels leves podem causar instabilidade. O estudo fornece uma interpretação unificada do papel da cauda na estimação de entropia.*
+
+------------------------------------------------------------------------
+
+-   No artigo do se varia o tamanhos da amostra (30/60/200)
+
+-   Ai em cada um ele varia os graus de liberdade
+
+------------------------------------------------------------------------
+
+Idéia - Distribuição tipo Slash? Pra variar da t de student?
+
+[Link](https://bdm.unb.br/handle/10483/27766)
+
+```{r}
+
+# graus de liberdade
+gl <- 10
+
+# distribuição t student
+H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
+
+print(H.true)
+```
+
+```{r}
+
+# iterações no loop
+B <- 500
+
+methods <- c("Gaussian", "Laplace", "Cauchy", "Pareto", "NND", "SS")
+
+sim_results <- matrix(NA_real_, nrow = B, ncol = length(methods))
+
+colnames(sim_results) <- methods
+
+# Get a sample of n.size from a Student's t distribution with gl degrees of freedom
+n.size <- 30 # tamanho da amostra
+h.max  <- 50 # limite superior no param h
+
+for (b in seq_len(B)) {
+  
+  if (b %% 10 == 0){
+    print("Iteração atual")
+    print(b)
+  }
+  
+  # t de student, tamanho "n.size" com "gl" graus de liberdade
+  # logico, univariado
+  # (um arrayzão lindo)
+  x.sim <- rt(n.size, df = gl)
+
+  h.G.sim <- optimize(function(h) Entropy.G(x.var = x.sim, h = h), lower = 0, upper = h.max)
+  h.C.sim <- optimize(function(h) Entropy.C(x.var = x.sim, h = h), lower = 0, upper = h.max)
+  h.L.sim <- optimize(function(h) Entropy.L(x.var = x.sim, h = h), lower = 0, upper = h.max)
+  h.P.sim <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = x.sim, par = par))
+
+  sim_results[b, ] <- c(
+    h.G.sim$objective,
+    h.L.sim$objective,
+    h.C.sim$objective,
+    h.P.sim$value,
+    H.NND(x.sim),
+    H.SSM(x.sim)
+  )
+}
+```
+
+```{r}
+
+sim_results
+```
+
+```{r}
+
+errors <- sim_results - H.true
+
+df <- data.frame(
+  type = methods,
+  variance = apply(sim_results, 2, var),
+  bias = colMeans(errors),
+  mse = colMeans(errors^2)
+)
+
+#write.csv(df, "dados_trinta_amostras.csv", row.names = FALSE)
+```
+
+```{r}
+
+df
+```
