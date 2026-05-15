@@ -38,10 +38,14 @@ sim_monte_carlo <- function(gl_values, sim_size, lim_sup, sample_size){
     gl = numeric()
   )
   
-  # distribuição real
-  H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
+  methods <- c("Gaussian", "Laplace", "Cauchy", "Pareto", "NND", "SS")
   
   for (gl in gl_values){
+
+    sim_results <- matrix(NA_real_, nrow = sim_size, ncol = length(methods))
+    
+    # distribuição real
+    H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
     
     print("Fazendo simulação de Monte Carlo")
     print("Graus de Liberdade")
@@ -98,7 +102,7 @@ gl_list = c(1, 2, 3, 4, 5, 10, 15, 20, 50, 100)
 
 start <- Sys.time()
 
-df <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 30)
+df_sample_size_30 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 30)
 
 end <- Sys.time()
 
@@ -110,18 +114,52 @@ print(duracao)
 
 ```{r}
 
-df
+write.csv(df_sample_size_30, "df_sample_size_30.csv", row.names = FALSE)
+
 ```
 
 ```{r}
 
-gl_list = c(1, 2, 3, 4, 5, 10, 15, 20, 50, 100)
+start <- Sys.time()
+
+df_sample_size_60 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 60)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_60, "df_sample_size_60.csv", row.names = FALSE)
+```
+
+```{r}
 
 start <- Sys.time()
 
-df_sample_size_30 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 30)
-df_sample_size_60 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 60)
 df_sample_size_200 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 200)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_200, "df_sample_size_200.csv", row.names = FALSE)
+```
+
+```{r}
+
+start <- Sys.time()
+
 df_sample_size_500 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 500)
 
 end <- Sys.time()
@@ -130,4 +168,9 @@ duracao <- end - start
 
 print("Tempo da simulação")
 print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_500, "df_sample_size_500.csv", row.names = FALSE)
 ```
