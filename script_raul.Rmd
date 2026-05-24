@@ -1,0 +1,303 @@
+---
+title: "main_population_stable"
+output: html_document
+date: "2026-05-23"
+---
+
+```{r}
+
+library(dplyr)
+library(extrafont)
+#loadfonts(device = "win")
+
+if(!require(stabledist)){
+    install.packages("stabledist")
+    library(stabledist)
+}
+
+if(!require(openxlsx)){
+    install.packages("openxlsx")
+    library(openxlsx)
+}
+
+if(!require(ggplot2)){
+    install.packages("ggplot2")
+    library(ggplot2)
+}
+
+```
+
+```{r}
+
+source("EntropyEstimationParetoKernel2.R")
+```
+
+```{# ========================================================}
+# Compute differential entropy of an alpha-Stable distribution
+# ========================================================
+
+Entropy_stable <- function(alpha, beta=0, gamma=1, delta=0, M=50, rel.tol=1e-6, abs.tol=1e-8, subdivisions=2000) {
+  
+  integrand <- function(x) {
+    
+    fx <- dstable(x, alpha=alpha, beta=beta, gamma=gamma, delta=delta, pm=1)
+    
+    # vetorizar tratamento de zeros/negativos (por numérica)
+    out <- -fx * log(fx)
+    
+    out[!is.finite(out) | fx <= 0] <- 0
+    out
+    
+  }
+  
+  res <- integrate(integrand, lower=-M, upper=M,
+                   rel.tol=rel.tol, abs.tol=abs.tol,
+                   subdivisions=subdivisions, stop.on.error=FALSE)
+  
+  if (!identical(res$message, "OK")) warning(res$message)
+  res$value
+}
+
+H_cauchy <- Entropy_stable(alpha=1, beta=0, gamma=1, delta=0, M=80)
+H_stable15 <- Entropy_stable(alpha=1.5, beta=0, gamma=1, delta=0, M=60)
+H_normal <- Entropy_stable(alpha=2, beta=0, gamma=1, delta=0, M=10)
+
+cat("Entropia Cauchy(0,1):", H_cauchy, "\n")
+cat("Entropia α-estável (α=1.5, β=0, γ=1):", H_stable15, "\n")
+cat("Entropia Normal(0,1):", H_normal, "\n")
+
+# ========================================================
+# Get estimates of entropies from an alpha-stable population,  
+# using the Pareto and t-Student kernel functions
+# ------------------------------------------------------------
+
+Get.Estimates <- function(alpha.s, n.size, r.size, nu.0 = alpha.s, h.0 = 1/sqrt(n.size))
+{
+  
+  # Pareto kernel
+  H.hat.P     <- NULL
+  alpha.hat.P <- NULL
+  beta.hat.P  <- NULL
+  # t Student kernel
+  H.hat.T     <- NULL
+  alpha.hat.T <- NULL
+  beta.hat.T  <- NULL
+
+  for (index in 1:r.size) {
+    
+    message("alpha = ", alpha.s, " ...processing ", index, " date/time = ", Sys.time())
+    
+    Sys.sleep(0.01)
+    flush.console()
+    x <- rstable(n.size, alpha = alpha.s, beta = 0, gamma = 1, delta = 0, pm = 1)
+    # Using Pareto kernel
+    H.result <- optim(Entropy.P, par = c(nu.0,h.0), x.var = x)
+    H.hat.P[index]     <- H.result$value
+    alpha.hat.P[index] <- H.result$par[1]
+    beta.hat.P[index]  <- H.result$par[2]
+    # Using t Student kernel
+    H.result <- optim(Entropy.T, par = c(nu.0,h.0), x.var = x)
+    H.hat.T[index]     <- H.result$value
+    alpha.hat.T[index] <- H.result$par[1]
+    beta.hat.T[index]  <- H.result$par[2]
+
+  }
+  
+  return(data.frame(alpha.s,n.size,r.size,H.hat.P,H.hat.T,alpha.hat.P,alpha.hat.T,beta.hat.P,beta.hat.T))
+  
+}
+
+```
+
+```{r}
+
+MCExperiment <- function(alpha.s,n.size,r.size) {
+  
+  simul <- Get.Estimates(as.numeric(alpha.s)/10, as.numeric(n.size), as.numeric(r.size))
+  
+  simul$alpha.hat.P  <- pmin(simul$alpha.hat.P, 2)
+  
+  simul$alpha.hat.T  <- pmin(simul$alpha.hat.T, 2)
+  
+  write.xlsx(simul, paste0("PStable", alpha.s, "_", n.size, "_", r.size, ".xlsx"))
+
+  }
+```
+
+```{r}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# ========================================================
+# Run the experiment
+# ========================================================
+
+# PROTECTED #
+
+setwd("C:/Users/raulm/OneDrive/XPS/_Pesquisas/_Beyond Variance/Simulations")
+
+#r.size <- "1000"
+#n.size <- "0060"
+#n.size <- "1000"
+
+#set.seed(81348530)
+#MCExperiment("006", n.size, r.size)
+#MCExperiment("008", n.size, r.size)
+#MCExperiment("010", n.size, r.size)
+#MCExperiment("012", n.size, r.size)
+#MCExperiment("014", n.size, r.size)
+#MCExperiment("016", n.size, r.size)
+#MCExperiment("018", n.size, r.size)
+#MCExperiment("020", n.size, r.size)
+
+# PROTECTED #
+
+# ========================================================
+# n = 60
+# ========================================================
+simul1  <- read.xlsx("PStable006_0060_1000.xlsx")
+simul2  <- read.xlsx("PStable008_0060_1000.xlsx")
+simul3  <- read.xlsx("PStable010_0060_1000.xlsx")
+simul4  <- read.xlsx("PStable012_0060_1000.xlsx")
+simul5  <- read.xlsx("PStable014_0060_1000.xlsx")
+simul6  <- read.xlsx("PStable016_0060_1000.xlsx")
+simul7  <- read.xlsx("PStable018_0060_1000.xlsx")
+simul8  <- read.xlsx("PStable020_0060_1000.xlsx")
+
+output <- rbind(simul1,simul2,simul3,simul4,simul5,simul6,simul7,simul8)
+
+round(mean(simul1$alpha.hat.P),3)
+round(mean(simul2$alpha.hat.P),3)
+round(mean(simul3$alpha.hat.P),3)
+round(mean(simul4$alpha.hat.P),3)
+round(mean(simul5$alpha.hat.P),3)
+round(mean(simul6$alpha.hat.P),3)
+round(mean(simul7$alpha.hat.P),3)
+round(mean(simul8$alpha.hat.P),3)
+
+round(mean(simul1$alpha.hat.P)-0.6,3)
+round(mean(simul2$alpha.hat.P)-0.8,3)
+round(mean(simul3$alpha.hat.P)-1,3)
+round(mean(simul4$alpha.hat.P)-1.2,3)
+round(mean(simul5$alpha.hat.P)-1.4,3)
+round(mean(simul6$alpha.hat.P)-1.6,3)
+round(mean(simul7$alpha.hat.P)-1.8,3)
+round(mean(simul8$alpha.hat.P)-2,3)
+
+round(mean((simul1$alpha.hat.P-0.6)^2),3)
+round(mean((simul2$alpha.hat.P-0.8)^2),3)
+round(mean((simul3$alpha.hat.P-1)^2),3)
+round(mean((simul4$alpha.hat.P-1.2)^2),3)
+round(mean((simul5$alpha.hat.P-1.4)^2),3)
+round(mean((simul6$alpha.hat.P-1.6)^2),3)
+round(mean((simul7$alpha.hat.P-1.8)^2),3)
+round(mean((simul8$alpha.hat.P-2)^2),3)
+
+round(mean(simul1$alpha.hat.T),3)
+round(mean(simul2$alpha.hat.T),3)
+round(mean(simul3$alpha.hat.T),3)
+round(mean(simul4$alpha.hat.T),3)
+round(mean(simul5$alpha.hat.T),3)
+round(mean(simul6$alpha.hat.T),3)
+round(mean(simul7$alpha.hat.T),3)
+round(mean(simul8$alpha.hat.T),3)
+
+
+round(mean(simul1$alpha.hat.T)-0.6,3)
+round(mean(simul2$alpha.hat.T)-0.8,3)
+round(mean(simul3$alpha.hat.T)-1,3)
+round(mean(simul4$alpha.hat.T)-1.2,3)
+round(mean(simul5$alpha.hat.T)-1.4,3)
+round(mean(simul6$alpha.hat.T)-1.6,3)
+round(mean(simul7$alpha.hat.T)-1.8,3)
+round(mean(simul8$alpha.hat.T)-2,3)
+
+round(mean((simul1$alpha.hat.T-0.6)^2),3)
+round(mean((simul2$alpha.hat.T-0.8)^2),3)
+round(mean((simul3$alpha.hat.T-1)^2),3)
+round(mean((simul4$alpha.hat.T-1.2)^2),3)
+round(mean((simul5$alpha.hat.T-1.4)^2),3)
+round(mean((simul6$alpha.hat.T-1.6)^2),3)
+round(mean((simul7$alpha.hat.T-1.8)^2),3)
+round(mean((simul8$alpha.hat.T-2)^2),3)
+```
+
+# Figure A Pareto
+
+n = 60
+
+```{r}
+
+# Resumo por alpha.s
+sum_out <- output %>%
+  group_by(alpha.s) %>%
+  summarise(
+    mean_hat = mean(alpha.hat.P, na.rm = TRUE),            # "ponto médio" (média)
+    q025     = quantile(alpha.hat.P, 0.025, na.rm = TRUE), # 2,5%
+    q975     = quantile(alpha.hat.P, 0.975, na.rm = TRUE)  # 97,5%
+  ) %>%
+  arrange(alpha.s)
+
+gg <- ggplot(output, aes(x = alpha.s, y = alpha.hat.P)) +
+  # banda de incerteza (2,5%–97,5%)
+  geom_ribbon(
+    data = sum_out,
+    aes(ymin = q025, ymax = q975, x = alpha.s),
+    inherit.aes = FALSE, fill = "grey70", alpha = 0.35
+  ) +
+  # pontos
+  geom_point(size = 1) +
+  # linha das médias por alpha.s
+  geom_line(
+    data = sum_out,
+    aes(y = mean_hat, x = alpha.s),
+    linewidth = 1.2, color = "blue"
+  ) +
+  # reta esperada: hat(alpha) = alpha.s
+  #geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red", linewidth = 1.2) +
+  ggtitle(expression(italic(n) == 60)) +
+  ylab(expression(hat(alpha))) +
+  xlab(expression(alpha[S])) +
+  theme(
+    text = element_text(family = "Times New Roman", size = 20, colour = "black"),
+    axis.title.y = element_text(angle = 90, colour = "black"),
+    axis.title.x = element_text(vjust = -0.5),
+    plot.title = element_text(size = 20, hjust = 0.5)
+  )
+
+png("FigureAlpha0060P.png",width = 14,height = 12,units = 'cm',res = 300)
+
+gg + scale_x_continuous(limits = c(0.5, 2.1), breaks = seq(0.6,2,by = 0.2))
+
+dev.off()
+
+```
+
+# Figure A Student-t
+
+```{r}
+
+# Resumo por alpha.s
+sum_out <- output %>%
+  group_by(alpha.s) %>%
+  summarise(
+    mean_hat = mean(alpha.hat.T, na.rm = TRUE),            # "ponto médio" (média)
+    q025     = quantile(alpha.hat.T, 0.025, na.rm = TRUE), # 2,5%
+    q975     = quantile(alpha.hat.T, 0.975, na.rm = TRUE)  # 97,5%
+  ) %>%
+  arrange(alpha.s)
+
+gg <- ggplot(output, aes(x = alpha.s, y = alpha.hat.T)) +
+  # banda de incerteza (2,5%–97,5%)
+  geom_ribbon(
+    data = sum_out,
+    aes(ymin = q025, ymax = q975, x = alpha.s),
+    inherit.aes = FALSE, fill = "grey70", alpha = 0.35
+  ) +
+  # pontos
+  geom_point(size = 1) +
+  # linha das médias por alpha.s
+  geom_line(
+    data = sum_out,
+    aes(y = mean_
+```

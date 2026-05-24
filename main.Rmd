@@ -28,6 +28,8 @@ set.seed(40028922)
 
 # sample_size: quantidade de amostras (no artigo feito para 30, 60, 200, 500)
 
+# tirar esse negócio do for e fazer com map (vetorizado) - furrr
+ 
 sim_monte_carlo <- function(gl_values, sim_size, lim_sup, sample_size){
   
   df_results <- data.frame(

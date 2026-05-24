@@ -1,0 +1,209 @@
+---
+title: "main"
+output: html_document
+---
+
+```{r}
+
+install.packages(c('future', 'furrr')) 
+```
+
+```{r}
+
+# Código original - Professor Raul
+source("EntropyEstimationParetoKernel.R")
+
+required_packages <- c("future", "furrr")
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_packages) > 0) {
+  stop(
+    "Instale os pacotes necessarios antes de rodar: install.packages(c('future', 'furrr'))",
+    call. = FALSE
+  )
+}
+
+library(future)
+library(furrr)
+
+future::plan(
+  future::multisession,
+  workers = max(1, future::availableCores() - 1)
+)
+```
+
+```{r}
+
+set.seed(40028922)
+```
+
+```{r}
+
+# gl_values_list: graus de liberdade pra testar
+# uma lista
+# gl = c(1, 2, 3, 4, 5, 10, 15, 20, 50, 100)
+
+# sim_size: quantidade de replicações na simulação de monte carlo
+# no artigo original foi feito 500
+
+# limite superior no param h
+# estava usando 50 
+
+# sample_size: quantidade de amostras (no artigo feito para 30, 60, 200, 500)
+
+# simulacao paralela com future_map - furrr
+ 
+sim_monte_carlo <- function(gl_values, sim_size, lim_sup, sample_size){
+  
+  methods <- c("Gaussian", "Laplace", "Cauchy", "Pareto", "NND", "SS")
+  
+  task_grid <- expand.grid(
+    b = seq_len(sim_size),
+    gl = gl_values,
+    KEEP.OUT.ATTRS = FALSE
+  )
+  task_grid <- task_grid[order(match(task_grid$gl, gl_values), task_grid$b), , drop = FALSE]
+  row.names(task_grid) <- NULL
+  
+  simular_estimadores <- function(gl) {
+    # t de student, tamanho "n.size" com "gl" graus de liberdade
+    # logico, univariado
+    # (um arrayzão lindo)
+    x.sim <- rt(sample_size, df = gl)
+
+    h.G.sim <- optimize(function(h) Entropy.G(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
+    h.C.sim <- optimize(function(h) Entropy.C(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
+    h.L.sim <- optimize(function(h) Entropy.L(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
+    h.P.sim <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = x.sim, par = par))
+
+    setNames(
+      c(
+        h.G.sim$objective,
+        h.L.sim$objective,
+        h.C.sim$objective,
+        h.P.sim$value,
+        H.NND(x.sim),
+        H.SSM(x.sim)
+      ),
+      methods
+    )
+  }
+  
+  message("Fazendo simulacao de Monte Carlo em paralelo")
+  message("Total de tarefas: ", nrow(task_grid))
+  message("Graus de liberdade: ", paste(gl_values, collapse = ", "))
+  message("----------------------------------")
+  
+  sim_results <- furrr::future_map(
+    task_grid$gl,
+    simular_estimadores,
+    .options = furrr::furrr_options(seed = TRUE, scheduling = 2)
+  )
+  sim_results <- as.data.frame(do.call(rbind, sim_results))
+  sim_results$gl <- task_grid$gl
+  
+  df_results <- lapply(gl_values, function(gl) {
+    sim_gl <- as.matrix(sim_results[sim_results$gl == gl, methods, drop = FALSE])
+    
+    # distribuição real
+    H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
+    
+    # pego os resultados e faço um dataframe com MSE, Variância e Bias
+    errors <- sim_gl - H.true
+
+    data.frame(
+      type = methods,
+      variance = apply(sim_gl, 2, var),
+      bias = colMeans(errors),
+      mse = colMeans(errors^2),
+      gl = gl
+    )
+  })
+  df_results <- do.call(rbind, df_results)
+  row.names(df_results) <- NULL
+  
+  df_results
+}
+
+```
+
+```{r}
+
+gl_list = c(1, 2, 3, 4, 5, 10, 15, 20, 50, 100)
+
+start <- Sys.time()
+
+df_sample_size_30 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 30)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_30, "df_sample_size_30_otim.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+start <- Sys.time()
+
+df_sample_size_60 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 60)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_60, "df_sample_size_60_otim.csv", row.names = FALSE)
+```
+
+```{r}
+
+start <- Sys.time()
+
+df_sample_size_200 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 200)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_200, "df_sample_size_200_otim.csv", row.names = FALSE)
+```
+
+```{r}
+
+start <- Sys.time()
+
+df_sample_size_500 <- sim_monte_carlo(gl_values = gl_list, sim_size = 500, lim_sup = 50, sample_size = 500)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_500, "df_sample_size_500_otim.csv", row.names = FALSE)
+```
