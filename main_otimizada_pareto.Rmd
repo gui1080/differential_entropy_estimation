@@ -85,7 +85,8 @@ set.seed(40028922)
 
 sim_monte_carlo <- function(alpha_values, sim_size, lim_sup, sample_size, entropy_M = 50){
   
-  methods <- c("Gaussian", "Laplace", "Cauchy","Pareto", "t-Student", "NND", "SS")
+  # "t-Student"
+  methods <- c("Gaussian", "Laplace", "Cauchy","Pareto", "NND", "SS")
   alpha_values <- as.numeric(alpha_values)
   
   if (any(alpha_values <= 0 | alpha_values > 2)) {
@@ -116,21 +117,8 @@ sim_monte_carlo <- function(alpha_values, sim_size, lim_sup, sample_size, entrop
     h.C.sim <- optimize(function(h) Entropy.C(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
     h.L.sim <- optimize(function(h) Entropy.L(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
     
-    h.P.sim <- optim(
-      par = c(alpha.s, 1 / sqrt(sample_size)),
-      fn = function(par) Entropy.P(x.var = x.sim, par = par),
-      method = "L-BFGS-B",
-      lower = c(1e-6, 1e-6)
-    )
+    h.P.sim <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = x.sim, par = par))
     
-    # na simulação original não tinha essa t-student
-    # lá a distribuição original já era uma t-student
-    h.T.sim <- optim(
-      par = c(alpha.s, 1 / sqrt(sample_size)),
-      fn = function(par) Entropy.T(x.var = x.sim, par = par),
-      method = "L-BFGS-B",
-      lower = c(1e-6, 1e-6)
-    )
       
     setNames(
       c(
@@ -138,7 +126,7 @@ sim_monte_carlo <- function(alpha_values, sim_size, lim_sup, sample_size, entrop
         h.L.sim$objective,
         h.C.sim$objective,
         h.P.sim$value,
-        h.T.sim$value,
+        #h.T.sim$value,
         H.NND(x.sim),
         H.SSM(x.sim)
       ),
@@ -189,6 +177,19 @@ sim_monte_carlo <- function(alpha_values, sim_size, lim_sup, sample_size, entrop
   df_results
 }
 
+```
+
+```         
+'''
+    # na simulação original não tinha essa t-student
+    # lá a distribuição original já era uma t-student
+    h.T.sim <- optim(
+      par = c(alpha.s, 1 / sqrt(sample_size)),
+      fn = function(par) Entropy.T(x.var = x.sim, par = par),
+      method = "L-BFGS-B",
+      lower = c(1e-6, 1e-6)
+    )
+    '''
 ```
 
 ```{r}
