@@ -1,0 +1,271 @@
+---
+title: "main"
+output: html_document
+---
+
+```{r}
+
+required_packages <- c("future", "furrr", "stabledist")
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_packages) > 0) {
+  stop(
+    "Instale os pacotes necessarios antes de rodar: install.packages(c('future', 'furrr', 'stabledist'))",
+    call. = FALSE
+  )
+}
+```
+
+```{r}
+
+library(stabledist)
+source("EntropyEstimationParetoKernel2.R")
+
+# Script do professor Raul
+# Peguei de "SimulationStudyPopulationStable - V01.txt
+# É uma forma de pegar a entropia da alpha-estável simétrica (que n tem forma fechada)
+Entropy_stable <- function(alpha, beta = 0, gamma = 1, delta = 0, M = 50,
+                           rel.tol = 1e-6, abs.tol = 1e-8,
+                           subdivisions = 2000) {
+  
+  integrand <- function(x) {
+    fx <- dstable(x, alpha = alpha, beta = beta, gamma = gamma, delta = delta, pm = 1)
+    out <- -fx * log(fx)
+    out[!is.finite(out) | fx <= 0] <- 0
+    out
+  }
+
+  integrate(
+    integrand,
+    lower = -M,
+    upper = M,
+    rel.tol = rel.tol,
+    abs.tol = abs.tol,
+    subdivisions = subdivisions,
+    stop.on.error = FALSE
+  )$value
+}
+```
+
+```{r}
+
+# Funcoes de estimacao carregadas de EntropyEstimationParetoKernel2.R acima
+
+library(future)
+library(furrr)
+
+future::plan(
+  future::multisession,
+  workers = max(1, future::availableCores() - 1)
+)
+```
+
+```{r}
+
+set.seed(40028922)
+```
+
+```{r}
+
+# alpha_values: parametros alpha da distribuicao alpha-estavel simetrica
+# valores validos: 0 < alpha <= 2
+# raul sugeriu -> 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2 sendo 2 a normal
+
+# sim_size: quantidade de replicações na simulação de monte carlo
+# no artigo original foi feito 500
+
+# limite superior no param h
+# estava usando 50 
+
+# sample_size: quantidade de amostras (no artigo feito para 30, 60, 200, 500)
+
+# simulacao paralela com future_map - furrr
+
+sim_monte_carlo <- function(alpha_values, sim_size, lim_sup, sample_size, entropy_M = 50){
+  
+  methods <- c("Gaussian", "Laplace", "Cauchy","Pareto", "t-Student", "NND", "SS")
+  alpha_values <- as.numeric(alpha_values)
+  
+  if (any(alpha_values <= 0 | alpha_values > 2)) {
+    stop("valores de alpha fora do intervalo", call. = FALSE)
+  }
+  
+  task_grid <- expand.grid(
+    b = seq_len(sim_size),
+    alpha.s = alpha_values,
+    KEEP.OUT.ATTRS = FALSE
+  )
+  task_grid <- task_grid[order(match(task_grid$alpha.s, alpha_values), task_grid$b), , drop = FALSE]
+  row.names(task_grid) <- NULL
+  
+  simular_estimadores <- function(alpha.s) {
+    
+    # alpha-estavel simetrica: beta = 0, gamma = 1, delta = 0
+    x.sim <- rstable(
+      sample_size,
+      alpha = alpha.s,
+      beta = 0,
+      gamma = 1,
+      delta = 0,
+      pm = 1
+    )
+    
+    h.G.sim <- optimize(function(h) Entropy.G(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
+    h.C.sim <- optimize(function(h) Entropy.C(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
+    h.L.sim <- optimize(function(h) Entropy.L(x.var = x.sim, h = h), lower = 0, upper = lim_sup)
+    
+    h.P.sim <- optim(
+      par = c(alpha.s, 1 / sqrt(sample_size)),
+      fn = function(par) Entropy.P(x.var = x.sim, par = par),
+      method = "L-BFGS-B",
+      lower = c(1e-6, 1e-6)
+    )
+    
+    # na simulação original não tinha essa t-student
+    # lá a distribuição original já era uma t-student
+    h.T.sim <- optim(
+      par = c(alpha.s, 1 / sqrt(sample_size)),
+      fn = function(par) Entropy.T(x.var = x.sim, par = par),
+      method = "L-BFGS-B",
+      lower = c(1e-6, 1e-6)
+    )
+      
+    setNames(
+      c(
+        h.G.sim$objective,
+        h.L.sim$objective,
+        h.C.sim$objective,
+        h.P.sim$value,
+        h.T.sim$value,
+        H.NND(x.sim),
+        H.SSM(x.sim)
+      ),
+      methods
+    )
+  }
+  
+  message("Fazendo simulacao de Monte Carlo em paralelo")
+  message("Total de tarefas: ", nrow(task_grid))
+  message("Alpha: ", paste(alpha_values, collapse = ", "))
+  message("----------------------------------")
+  
+  sim_results <- furrr::future_map(
+    task_grid$alpha.s,
+    simular_estimadores,
+    .options = furrr::furrr_options(seed = TRUE, scheduling = 2)
+  )
+  sim_results <- as.data.frame(do.call(rbind, sim_results))
+  sim_results$alpha.s <- task_grid$alpha.s
+  
+  df_results <- lapply(alpha_values, function(alpha.s) {
+    sim_alpha <- as.matrix(sim_results[sim_results$alpha.s == alpha.s, methods, drop = FALSE])
+    
+    # entropia alpha estavel simetrica
+    # aqui tem que ir na força bruta!
+    H.true <- Entropy_stable(
+      alpha = alpha.s,
+      beta = 0,
+      gamma = 1,
+      delta = 0,
+      M = entropy_M
+    )
+        
+    # pego os resultados e faço um dataframe com MSE, Variância e Bias
+    errors <- sim_alpha - H.true
+
+    data.frame(
+      type = methods,
+      variance = apply(sim_alpha, 2, var),
+      bias = colMeans(errors),
+      mse = colMeans(errors^2),
+      alpha.s = alpha.s
+    )
+  })
+  df_results <- do.call(rbind, df_results)
+  row.names(df_results) <- NULL
+  
+  df_results
+}
+
+```
+
+```{r}
+
+alpha_list = c(0.5, 0.75, 1, 1.25, 1.5, 1.75, 2)
+
+start <- Sys.time()
+
+df_sample_size_30 <- sim_monte_carlo(alpha_values = alpha_list, sim_size = 500, lim_sup = 50, sample_size = 30)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_30, "df_stable_sample_size_30_alpha_estavel.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+start <- Sys.time()
+
+df_sample_size_60 <- sim_monte_carlo(alpha_values = alpha_list, sim_size = 500, lim_sup = 50, sample_size = 60)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_60, "df_stable_sample_size_60_alpha_estavel.csv", row.names = FALSE)
+```
+
+```{r}
+
+start <- Sys.time()
+
+df_sample_size_200 <- sim_monte_carlo(alpha_values = alpha_list, sim_size = 500, lim_sup = 50, sample_size = 200)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_200, "df_stable_sample_size_200_alpha_estavel.csv", row.names = FALSE)
+```
+
+```{r}
+
+start <- Sys.time()
+
+df_sample_size_500 <- sim_monte_carlo(alpha_values = alpha_list, sim_size = 500, lim_sup = 50, sample_size = 500)
+
+end <- Sys.time()
+
+duracao <- end - start
+
+print("Tempo da simulação")
+print(duracao)
+```
+
+```{r}
+
+write.csv(df_sample_size_500, "df_stable_sample_size_500_alpha_estavel.csv", row.names = FALSE)
+```

@@ -107,7 +107,7 @@ sim_monte_carlo <- function(gl_values, sim_size, lim_sup, sample_size){
   df_results <- lapply(gl_values, function(gl) {
     sim_gl <- as.matrix(sim_results[sim_results$gl == gl, methods, drop = FALSE])
     
-    # distribuição real
+    # entropia da distribuição real
     H.true <- 0.5*(gl+1)*(digamma((gl+1)/2)-digamma(gl/2))+log(sqrt(gl)*beta(gl/2,0.5))
     
     # pego os resultados e faço um dataframe com MSE, Variância e Bias
