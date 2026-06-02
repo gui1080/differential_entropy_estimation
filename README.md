@@ -10,6 +10,8 @@ Resultados disso: na pasta *simulaçoes_14_05*.
 
 -   Arquivo *main_otimizada.Rmd*: a simulação como antes só que paralelizado com a biblioteca **furr**. Com samples muito grandes, a simulação como no arquivo original nem roda.
 
+-   Esses resultados foram então validados no arquivo *analise_resultados.Rmd*, o que nos indica que os resultados estão dentro do esperado ao comparar com o artigo original.
+
 Resultados disso: na pasta *simulaçoes_23_05*.
 
 -   Arquivo *bbas3.Rmd*: aplicando entropia nas ações do Banco do Brasil. Isso aqui foi feito muito corrido, provavelmente é necessário revisar.
