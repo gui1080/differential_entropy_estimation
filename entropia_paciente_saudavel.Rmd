@@ -1,0 +1,198 @@
+---
+title: "entropia_paciente_doente"
+output: html_document
+---
+
+### RECORD_REL \<- "records100/06000/00006_lr" -\> paciente saudável
+
+patient_id: 19005
+
+ecg_id: 6
+
+idade: 18
+
+sexo: 1
+
+arquivo ECG: records100/00000/00006_lr
+
+```{r}
+source("EntropyEstimationParetoKernel2.R")
+source("aplicacao_entropia_ecg.R")
+library(readr)
+```
+
+```{r}
+
+ecg_record_6_lead_AVF <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_AVF.csv")
+ecg_record_6_lead_AVL <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_AVL.csv")
+ecg_record_6_lead_AVR <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_AVR.csv")
+
+ecg_record_6_lead_I <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_I.csv")
+ecg_record_6_lead_II <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_II.csv")
+ecg_record_6_lead_III <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_III.csv")
+
+ecg_record_6_lead_V1 <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_V1.csv")
+ecg_record_6_lead_V2 <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_V2.csv")
+ecg_record_6_lead_V3 <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_V3.csv")
+ecg_record_6_lead_V4 <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_V4.csv")
+ecg_record_6_lead_V5 <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_V5.csv")
+ecg_record_6_lead_V6 <- read_csv("resultados_ecg/csv_record_6/ecg_record_6_lead_V6.csv")
+
+```
+
+```{r}
+
+resultado_avf_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_AVF,
+  janela_tamanho = 50
+)
+resultado_avl_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_AVL,
+  janela_tamanho = 50
+)
+resultado_avr_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_AVR,
+  janela_tamanho = 50
+)
+
+# ------------------
+resultado_I_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_I,
+  janela_tamanho = 50
+)
+resultado_II_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_II,
+  janela_tamanho = 50
+)
+resultado_III_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_III,
+  janela_tamanho = 50
+)
+
+# ------------------
+resultado_V1_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_V1,
+  janela_tamanho = 50
+)
+resultado_V2_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_V2,
+  janela_tamanho = 50
+)
+resultado_V3_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_V3,
+  janela_tamanho = 50
+)
+resultado_V4_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_V4,
+  janela_tamanho = 50
+)
+resultado_V5_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_V5,
+  janela_tamanho = 50
+)
+resultado_V6_otimo_saudavel <- calcular_entropia_janela_deslizante_ecg_alpha_otimo(
+  ecg_record_6_lead_V6,
+  janela_tamanho = 50
+)
+```
+
+```{r}
+resultado_V6_otimo_saudavel
+```
+
+```{r}
+
+sum(resultado_V6_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V5_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V4_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V3_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V2_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V1_otimo_saudavel$tipo_melhor == "heavy")
+```
+
+# Agora com sobreposição
+
+```{r}
+
+resultado_avf_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_AVF,
+  janela_tamanho = 50
+)
+resultado_avl_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_AVL,
+  janela_tamanho = 50
+)
+resultado_avr_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_AVR,
+  janela_tamanho = 50
+)
+
+# ------------------
+resultado_I_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_I,
+  janela_tamanho = 50
+)
+resultado_II_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_II,
+  janela_tamanho = 50
+)
+resultado_III_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_III,
+  janela_tamanho = 50
+)
+
+# ------------------
+resultado_V1_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_V1,
+  janela_tamanho = 50
+)
+resultado_V2_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_V2,
+  janela_tamanho = 50
+)
+resultado_V3_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_V3,
+  janela_tamanho = 50
+)
+resultado_V4_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_V4,
+  janela_tamanho = 50
+)
+resultado_V5_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_V5,
+  janela_tamanho = 50
+)
+resultado_V6_otimo_saudavel_fim <- calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao(
+  ecg_record_6_lead_V6,
+  janela_tamanho = 50
+)
+```
+
+```{r}
+
+sum(resultado_V6_otimo_saudavel_fim$tipo_melhor == "heavy")
+sum(resultado_V5_otimo_saudavel_fim$tipo_melhor == "heavy")
+sum(resultado_V4_otimo_saudavel_fim$tipo_melhor == "heavy")
+sum(resultado_V3_otimo_saudavel_fim$tipo_melhor == "heavy")
+sum(resultado_V2_otimo_saudavel_fim$tipo_melhor == "heavy")
+sum(resultado_V1_otimo_saudavel_fim$tipo_melhor == "heavy")
+```
+
+```{r}
+
+write.csv(resultado_avf_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_avl_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_avr_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+
+
+write.csv(resultado_I_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_II_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_III_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_V1_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_V2_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_V3_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_V4_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_V5_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+write.csv(resultado_V6_otimo_saudavel_fim, "df_sample_size_30_otim.csv", row.names = FALSE)
+
+```
