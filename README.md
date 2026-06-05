@@ -13,7 +13,10 @@ Resultados disso: na pasta *simulaçoes\_14\_05*.
 
 Resultados disso: na pasta *simulaçoes\_23\_05*.
 
-* Arquivo *bbas3.Rmd*: aplicando entropia nas ações do Banco do Brasil. Isso aqui foi feito muito corrido, provavelmente é necessário revisar.
+* Arquivo *bbas3.Rmd*: aplicando entropia nas ações do Banco do Brasil. Com isso dá pra tentar reproduzir as Figuras 3 e 4 do Artigo original.
+
+Resultados: pasta *simulacoes_04_06*.
+
 * Arquivo *main\_otimizada\_pareto.Rmd*: mesma coisa que a main\_otimizada.Rmd só que eu mudei a t-student pela alpha-estável simétrica.
 
 Resultados disso: na pasta *simulacoes\_28\_05*.
