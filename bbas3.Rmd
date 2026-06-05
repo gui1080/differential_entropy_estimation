@@ -3,7 +3,7 @@ title: "bbas3"
 output: html_document
 ---
 
-## Entropia BBAS3
+# Entropia BBAS3
 
 -   Sample Size de 30
 
@@ -11,6 +11,11 @@ output: html_document
 
 #install.packages("quantmod")
 #install.packages("zoo")
+```
+
+```{r}
+
+source("EntropyEstimationParetoKernel2.R")
 ```
 
 ```{r}
@@ -66,10 +71,22 @@ tamanho_intervalos = nrow(blocos_30d)
 
 ```{r}
 
-sim_bbas3 <- numeric(tamanho_intervalos)
+blocos_30d
+```
+
+```{r}
+
+sim_bbas3_heavy <- numeric(tamanho_intervalos)
+alpha_bbas3_heavy <- numeric(tamanho_intervalos)
+  
 sim_bbas3_light <- numeric(tamanho_intervalos)
-sim_var_bbas3 <- numeric(tamanho_intervalos)
-exp_sim_bbas3 <- numeric(tamanho_intervalos)
+alpha_bbas3_light <- numeric(tamanho_intervalos)
+  
+sim_bbas3_dirac <- numeric(tamanho_intervalos)
+alpha_bbas3_dirac <- numeric(tamanho_intervalos)
+
+# sim_bbas3_melhor <- numeric(tamanho_intervalos)
+tipo_bbas3_melhor <- numeric(tamanho_intervalos)
 
 for (b in seq_len(tamanho_intervalos)) {
   
@@ -80,84 +97,69 @@ for (b in seq_len(tamanho_intervalos)) {
   # light tail alpha 2 < alpha < +inf
   # delta de dirac alpha = +inf
   # par = c(alpha, beta)
-  h.P.sim <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
   
-  # heavy tail (1000 foi um valor chutado)
-  h.P.sim_light <- optim(par = c(1000, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
+  # heavy tail
+  h.P.sim_heavy <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
   
-  sim_bbas3[b] <- h.P.sim$value
-  sim_bbas3_light[b] <- exp(h.P.sim_light$value)
-  sim_var_bbas3[b] <- var(vetor_bbas3)
-  exp_sim_bbas3[b] <- exp(h.P.sim$value)
+  # light tail 
+  h.P.sim_light <- optim(par = c(5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
   
+  # delta de dirac (1000 foi um valor chutado)
+  h.P.sim_dirac <- optim(par = c(1000, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
+  
+  
+  sim_bbas3_heavy[b] <- h.P.sim_heavy$value
+  alpha_bbas3_heavy[b] <- h.P.sim_heavy$par[1]
+  
+  sim_bbas3_light[b] <- h.P.sim_light$value
+  alpha_bbas3_light[b] <- h.P.sim_light$par[1]
+  
+  sim_bbas3_dirac[b] <- h.P.sim_dirac$value
+  alpha_bbas3_dirac[b] <- h.P.sim_dirac$par[1]
+  
+  # comparo os 3 kernels candidados e tento achar o melhor fit
+  valores <- c(
+    heavy = h.P.sim_heavy$value,
+    light = h.P.sim_light$value,
+    dirac = h.P.sim_dirac$value
+  )
+  
+  #sim_bbas3_melhor[b] <- min(valores)
+  tipo_bbas3_melhor[b] <- names(valores)[which.min(valores)]
+
 }
 
 ```
 
 ```{r}
 
-plot(exp_sim_bbas3, sim_var_bbas3,
-     pch = 19,
-     col = "blue",
-     xlab = "exp(H(t))",
-     ylab = "Variância",
-     main = "exp(H(t)) por Variância")
-
-points(sim_bbas3_light, sim_var_bbas3,
-       pch = 19,
-       col = "red")
-
-legend("topleft",
-       legend = c("Cauda pesada", "Cauda leve"),
-       col = c("blue", "red"),
-       pch = 19,
-       bty = "n")
-
-
-```
-
-Parece que o kernel de cauda pesada tem maior sensibilidade à dispersão e aos eventos extremos (cauda leve se concentra em exp(H(t)) e Variância mais baixos)
-
-```{r}
-
-bbas3_hst <- pegar_bbas3(blocos_30d$inicio[1], blocos_30d$fim[tamanho_intervalos])
+print("heavy")
+print("------------------")
+sim_bbas3_heavy
+print("light")
+print("------------------")
+sim_bbas3_light
+print("dirac")
+print("------------------")
+sim_bbas3_dirac
 ```
 
 ```{r}
 
-plot(bbas3_hst$data, bbas3_hst$valor, type = "l", col = "blue", lwd = 2,
-     xlab = "Data",
-     ylab = "Preço",
-     main = "BBAS3",
-     yaxt = "n")
-
-axis(2, at = pretty(range(bbas3_hst$valor), n = 10), col = "blue", col.axis = "blue")
-
-
-idx <- round(seq(1, nrow(bbas3_hst), length.out = tamanho_intervalos))
-
-par(new = TRUE)
-
-plot(bbas3_hst$data[idx], sim_bbas3, type = "b", col = "red", lwd = 2, pch = 19,
-     axes = FALSE, xlab = "", ylab = "",
-     ylim = range(sim_bbas3, na.rm = TRUE))
-
-axis(4, at = pretty(range(sim_bbas3), n = 10),, col = "red", col.axis = "red")
-mtext("H(t)", side = 4, line = 2, col = "red")
-
-legend("topleft",
-       legend = c("Preço BBAS3", "H(t)"),
-       col = c("blue", "red"),
-       lty = c(1, 1),
-       pch = c(NA, 19),
-       lwd = c(2, 2),
-       bty = "n")
-
-
-
+blocos_30d$tipo_melhor <- tipo_bbas3_melhor
 ```
 
-### Mesma coisa só que com janela deslizante de 30 dias
+```{r}
+
+blocos_30d
+```
+
+```{r}
+
+write.csv(blocos_30d, "bbas_janela_fixa.csv", row.names = FALSE)
+```
+
+# Janela deslizante
 
 ```{r}
 
@@ -171,73 +173,94 @@ inicio_janelas <- seq(
   by = "day"
 )
 
-blocos_30d <- data.frame(
+blocos_30d_fim <- data.frame(
   bloco = seq_along(inicio_janelas),
   inicio = inicio_janelas,
   fim = inicio_janelas + (janela_dias - 1)
 )
 
-tamanho_intervalos = nrow(blocos_30d)
+tamanho_intervalos = nrow(blocos_30d_fim)
 
-blocos_30d$inicio[1]
-blocos_30d$fim[1]
+blocos_30d_fim$inicio[1]
+blocos_30d_fim$fim[1]
 ```
 
 ```{r}
 
-sim_bbas3 <- numeric(tamanho_intervalos)
+blocos_30d_fim
+```
 
+```{r}
+
+sim_bbas3_heavy <- numeric(tamanho_intervalos)
+alpha_bbas3_heavy <- numeric(tamanho_intervalos)
+  
+sim_bbas3_light <- numeric(tamanho_intervalos)
+alpha_bbas3_light <- numeric(tamanho_intervalos)
+  
+sim_bbas3_dirac <- numeric(tamanho_intervalos)
+alpha_bbas3_dirac <- numeric(tamanho_intervalos)
+
+# sim_bbas3_melhor <- numeric(tamanho_intervalos)
+tipo_bbas3_melhor <- numeric(tamanho_intervalos)
 
 for (b in seq_len(tamanho_intervalos)) {
   
-  if((b %% 10) == 0){
-    print(blocos_30d$fim[b])
-  }
-    
-  vetor_bbas3 <- pegar_bbas3(blocos_30d$inicio[b], blocos_30d$fim[b])$valor
+  print("iteração")
+  print(b)
+  
+  vetor_bbas3 <- pegar_bbas3(blocos_30d_fim$inicio[b], blocos_30d_fim$fim[b])$valor
   
   # pareto kernel
   # heavy tail alpha <= 2
   # light tail alpha 2 < alpha < +inf
   # delta de dirac alpha = +inf
   # par = c(alpha, beta)
-  h.P.sim <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
   
-  sim_bbas3[b] <- h.P.sim$value
+  # heavy tail
+  h.P.sim_heavy <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
   
+  # light tail 
+  h.P.sim_light <- optim(par = c(5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
+  
+  # delta de dirac (1000 foi um valor chutado)
+  h.P.sim_dirac <- optim(par = c(1000, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
+  
+  
+  sim_bbas3_heavy[b] <- h.P.sim_heavy$value
+  alpha_bbas3_heavy[b] <- h.P.sim_heavy$par[1]
+  
+  sim_bbas3_light[b] <- h.P.sim_light$value
+  alpha_bbas3_light[b] <- h.P.sim_light$par[1]
+  
+  sim_bbas3_dirac[b] <- h.P.sim_dirac$value
+  alpha_bbas3_dirac[b] <- h.P.sim_dirac$par[1]
+  
+  # comparo os 3 kernels candidados e tento achar o melhor fit
+  valores <- c(
+    heavy = h.P.sim_heavy$value,
+    light = h.P.sim_light$value,
+    dirac = h.P.sim_dirac$value
+  )
+  
+  #sim_bbas3_melhor[b] <- min(valores)
+  tipo_bbas3_melhor[b] <- names(valores)[which.min(valores)]
+
 }
 
 ```
 
 ```{r}
 
-plot(bbas3_hst$data, bbas3_hst$valor, type = "l", col = "blue", lwd = 2,
-     xlab = "Data",
-     ylab = "Preço",
-     main = "BBAS3",
-     yaxt = "n")
+blocos_30d_fim$tipo_melhor <- tipo_bbas3_melhor
+```
 
-axis(2, at = pretty(range(bbas3_hst$valor), n = 10), col = "blue", col.axis = "blue")
+```{r}
 
+blocos_30d_fim
+```
 
-idx <- round(seq(1, nrow(bbas3_hst), length.out = tamanho_intervalos))
+```{r}
 
-par(new = TRUE)
-
-plot(bbas3_hst$data[idx], sim_bbas3, type = "b", col = "red", lwd = 2, pch = 19,
-     axes = FALSE, xlab = "", ylab = "",
-     ylim = range(sim_bbas3, na.rm = TRUE))
-
-axis(4, at = pretty(range(sim_bbas3), n = 10),, col = "red", col.axis = "red")
-mtext("H(t)", side = 4, line = 2, col = "red")
-
-legend("topleft",
-       legend = c("Preço BBAS3", "H(t)"),
-       col = c("blue", "red"),
-       lty = c(1, 1),
-       pch = c(NA, 19),
-       lwd = c(2, 2),
-       bty = "n")
-
-
+write.csv(blocos_30d_fim, "bbas_janela_deslizante.csv", row.names = FALSE)
 ```
