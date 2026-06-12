@@ -58,39 +58,45 @@ pegar_bbas3 <- function(data_inicio, data_fim, campo = c("Adjusted", "Close")) {
 
 ```{r}
 
-blocos_30d <- data.frame(
-  bloco = 1:24,
-  inicio = seq(as.Date("2024-04-11"), by = 30, length.out = 24)
+data_inicio <- as.Date("2015-01-01")
+data_fim <- as.Date("2026-03-31")
+janela_dias <- 30
+
+inicio_blocos <- seq(
+  from = data_inicio,
+  to = data_fim,
+  by = janela_dias
 )
 
-blocos_30d$fim <- c(blocos_30d$inicio[-1] - 1, as.Date("2026-03-31"))
+blocos_60d <- data.frame(
+  bloco = seq_along(inicio_blocos),
+  inicio = inicio_blocos
+)
 
-tamanho_intervalos = nrow(blocos_30d)
+blocos_60d$fim <- pmin(blocos_60d$inicio + janela_dias - 1, data_fim)
+
+tamanho_intervalos <- nrow(blocos_60d)
 
 ```
 
 ```{r}
 
-blocos_30d
+blocos_60d
 ```
 
 ```{r}
 
-sim_bbas3_heavy <- numeric(tamanho_intervalos)
-alpha_bbas3_heavy <- numeric(tamanho_intervalos)
-  
-sim_bbas3_light <- numeric(tamanho_intervalos)
-alpha_bbas3_light <- numeric(tamanho_intervalos)
-  
-sim_bbas3_dirac <- numeric(tamanho_intervalos)
-alpha_bbas3_dirac <- numeric(tamanho_intervalos)
-
-# sim_bbas3_melhor <- numeric(tamanho_intervalos)
-tipo_bbas3_melhor <- numeric(tamanho_intervalos)
+entropia_bbas3 <- numeric(tamanho_intervalos)
+alpha_bbas3 <- numeric(tamanho_intervalos)
+beta_bbas3 <- numeric(tamanho_intervalos)
+categoria_alpha_bbas3 <- character(tamanho_intervalos)
+valor_bbas3 <- numeric(tamanho_intervalos)
 
 for (b in seq_len(tamanho_intervalos)) {
   
-  vetor_bbas3 <- pegar_bbas3(blocos_30d$inicio[b], blocos_30d$fim[b])$valor
+  dados_bbas3 <- pegar_bbas3(blocos_60d$inicio[b], blocos_60d$fim[b])
+  precos_bbas3 <- dados_bbas3$valor
+  vetor_bbas3 <- diff(log(precos_bbas3))
   
   # pareto kernel
   # heavy tail alpha <= 2
@@ -98,34 +104,43 @@ for (b in seq_len(tamanho_intervalos)) {
   # delta de dirac alpha = +inf
   # par = c(alpha, beta)
   
-  # heavy tail
-  h.P.sim_heavy <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
+  # muda aqui codex! quero otimizar o beta tb
+  limite_beta <- max(diff(range(vetor_bbas3, na.rm = TRUE)) * 10, 1)
+  penalidade_otimizacao <- 1e12
   
-  # light tail 
-  h.P.sim_light <- optim(par = c(5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
-  
-  # delta de dirac (1000 foi um valor chutado)
-  h.P.sim_dirac <- optim(par = c(1000, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
-  
-  
-  sim_bbas3_heavy[b] <- h.P.sim_heavy$value
-  alpha_bbas3_heavy[b] <- h.P.sim_heavy$par[1]
-  
-  sim_bbas3_light[b] <- h.P.sim_light$value
-  alpha_bbas3_light[b] <- h.P.sim_light$par[1]
-  
-  sim_bbas3_dirac[b] <- h.P.sim_dirac$value
-  alpha_bbas3_dirac[b] <- h.P.sim_dirac$par[1]
-  
-  # comparo os 3 kernels candidados e tento achar o melhor fit
-  valores <- c(
-    heavy = h.P.sim_heavy$value,
-    light = h.P.sim_light$value,
-    dirac = h.P.sim_dirac$value
+  h.P.sim <- optim(
+    par = c(1, 1),
+    fn = function(par) {
+      if (any(!is.finite(par)) || par[1] <= 0 || par[2] <= 0) {
+        return(penalidade_otimizacao)
+      }
+      
+      entropia <- tryCatch(
+        Entropy.P(x.var = vetor_bbas3, par = par),
+        error = function(e) NA_real_
+      )
+      
+      if (length(entropia) != 1 || !is.finite(entropia)) {
+        return(penalidade_otimizacao)
+      }
+      
+      entropia
+    },
+    method = "L-BFGS-B",
+    lower = c(1e-6, 1e-6),
+    upper = c(1000, limite_beta)
   )
   
-  #sim_bbas3_melhor[b] <- min(valores)
-  tipo_bbas3_melhor[b] <- names(valores)[which.min(valores)]
+  entropia_bbas3[b] <- h.P.sim$value
+  alpha_bbas3[b] <- h.P.sim$par[1]
+  beta_bbas3[b] <- h.P.sim$par[2]
+  valor_bbas3[b] <- tail(dados_bbas3$valor, 1)
+  
+  categoria_alpha_bbas3[b] <- ifelse(
+    log(alpha_bbas3[b]) <= 2,
+    "heavy",
+    ifelse(alpha_bbas3[b] > exp(5), "dirac", "light")
+  )
 
 }
 
@@ -133,20 +148,191 @@ for (b in seq_len(tamanho_intervalos)) {
 
 ```{r}
 
-print("heavy")
-print("------------------")
-sim_bbas3_heavy
-print("light")
-print("------------------")
-sim_bbas3_light
-print("dirac")
-print("------------------")
-sim_bbas3_dirac
+alpha_bbas3
 ```
 
 ```{r}
 
-blocos_30d$tipo_melhor <- tipo_bbas3_melhor
+categoria_alpha_bbas3
+```
+
+```{r}
+
+blocos_60d$entropia <- entropia_bbas3
+blocos_60d$alpha <- alpha_bbas3
+blocos_60d$beta <- beta_bbas3
+blocos_60d$categoria_alpha <- categoria_alpha_bbas3
+blocos_60d$valor_bbas3 <- valor_bbas3
+
+# faz o grafico aqui!
+dados_bbas3_todos <- pegar_bbas3(min(blocos_60d$inicio), max(blocos_60d$fim))
+
+janela_categoria_bbas3 <- data.frame(
+  inicio = blocos_60d$inicio,
+  fim = blocos_60d$fim,
+  categoria_alpha = as.character(blocos_60d$categoria_alpha)
+)
+
+cores_alpha <- c(
+  heavy = "#ef6f7b",
+  light = "#4f9db8",
+  dirac = "#4d4d4d"
+)
+
+plotar_bbas3_categoria <- function() {
+  plot(
+    dados_bbas3_todos$data,
+    dados_bbas3_todos$valor,
+    type = "n",
+    xlab = "Data",
+    ylab = "Preco ajustado BBAS3",
+    main = "BBAS3 por categoria de alpha"
+  )
+  
+  grid(col = "#eeeeee")
+  
+  for (j in seq_len(nrow(janela_categoria_bbas3))) {
+    pontos_janela <- dados_bbas3_todos$data >= janela_categoria_bbas3$inicio[j] &
+      dados_bbas3_todos$data <= janela_categoria_bbas3$fim[j]
+    
+    if (sum(pontos_janela) > 0) {
+      categoria_janela <- as.character(janela_categoria_bbas3$categoria_alpha[j])
+      cor_janela <- unname(cores_alpha[categoria_janela])
+      if (is.na(cor_janela)) {
+        cor_janela <- "#4d4d4d"
+      }
+      
+      lines(
+        dados_bbas3_todos$data[pontos_janela],
+        dados_bbas3_todos$valor[pontos_janela],
+        col = cor_janela,
+        lwd = 1.8
+      )
+    }
+  }
+  
+  legend(
+    "topleft",
+    legend = names(cores_alpha),
+    col = cores_alpha,
+    lwd = 1.8,
+    title = "Tail type",
+    bty = "n"
+  )
+}
+
+
+```
+
+```{r}
+
+plotar_bbas3_categoria()
+
+```
+
+```{r, fig.width=10, fig.height=5.5}
+
+# retorno em log
+retorno_log_bbas3 <- data.frame(
+  data = dados_bbas3_todos$data[-1],
+  retorno_log = diff(log(dados_bbas3_todos$valor))
+)
+
+retorno_log_bbas3$categoria_alpha <- NA_character_
+
+for (j in seq_len(nrow(janela_categoria_bbas3))) {
+  pontos_janela <- retorno_log_bbas3$data >= janela_categoria_bbas3$inicio[j] &
+    retorno_log_bbas3$data <= janela_categoria_bbas3$fim[j]
+  
+  retorno_log_bbas3$categoria_alpha[pontos_janela] <- janela_categoria_bbas3$categoria_alpha[j]
+}
+
+cores_retorno_log <- c(
+  dirac = "black",
+  heavy = "red",
+  light = "blue"
+)
+
+plotar_retorno_log_bbas3 <- function() {
+  par_original <- par(no.readonly = TRUE)
+  on.exit({
+    layout(1)
+    par(par_original)
+  })
+  
+  layout(matrix(c(1, 2), nrow = 2), heights = c(5, 1))
+  par(mar = c(4.5, 4, 4, 2) + 0.1)
+  
+  plot(
+    retorno_log_bbas3$data,
+    retorno_log_bbas3$retorno_log,
+    type = "n",
+    xlab = "t",
+    ylab = expression(X[t]),
+    main = "BBAS3",
+    ylim = range(retorno_log_bbas3$retorno_log, na.rm = TRUE),
+    las = 1
+  )
+  
+  grid(col = "#dddddd")
+  abline(h = 0, col = "#777777", lwd = 0.8)
+  
+  for (j in seq_len(nrow(janela_categoria_bbas3))) {
+    pontos_janela <- retorno_log_bbas3$data >= janela_categoria_bbas3$inicio[j] &
+      retorno_log_bbas3$data <= janela_categoria_bbas3$fim[j]
+    
+    if (sum(pontos_janela) > 1) {
+      categoria_janela <- as.character(janela_categoria_bbas3$categoria_alpha[j])
+      cor_janela <- unname(cores_retorno_log[categoria_janela])
+      
+      if (is.na(cor_janela)) {
+        cor_janela <- "gray50"
+      }
+      
+      lines(
+        retorno_log_bbas3$data[pontos_janela],
+        retorno_log_bbas3$retorno_log[pontos_janela],
+        col = cor_janela,
+        lwd = 1
+      )
+    }
+  }
+  
+  par(mar = c(0, 0, 0, 0))
+  plot.new()
+  
+  legend(
+    "center",
+    horiz = TRUE,
+    legend = c("Dirac delta", "heavy", "light"),
+    col = cores_retorno_log[c("dirac", "heavy", "light")],
+    lwd = 2,
+    title = "Pareto's kernel type:",
+    bty = "n",
+    cex = 1.1
+  )
+}
+
+plotar_retorno_log_bbas3()
+
+
+```
+
+```{r}
+
+print("alpha")
+print("------------------")
+alpha_bbas3
+print("beta")
+print("------------------")
+beta_bbas3
+print("categoria")
+print("------------------")
+categoria_alpha_bbas3
+print("valor_bbas3")
+print("------------------")
+valor_bbas3
+
 ```
 
 ```{r}
@@ -157,110 +343,4 @@ blocos_30d
 ```{r}
 
 write.csv(blocos_30d, "bbas_janela_fixa.csv", row.names = FALSE)
-```
-
-# Janela deslizante
-
-```{r}
-
-data_inicio <- as.Date("2024-04-11")
-data_fim <- as.Date("2026-03-31")
-janela_dias <- 30
-
-inicio_janelas <- seq(
-  from = data_inicio,
-  to = data_fim - (janela_dias - 1),
-  by = "day"
-)
-
-blocos_30d_fim <- data.frame(
-  bloco = seq_along(inicio_janelas),
-  inicio = inicio_janelas,
-  fim = inicio_janelas + (janela_dias - 1)
-)
-
-tamanho_intervalos = nrow(blocos_30d_fim)
-
-blocos_30d_fim$inicio[1]
-blocos_30d_fim$fim[1]
-```
-
-```{r}
-
-blocos_30d_fim
-```
-
-```{r}
-
-sim_bbas3_heavy <- numeric(tamanho_intervalos)
-alpha_bbas3_heavy <- numeric(tamanho_intervalos)
-  
-sim_bbas3_light <- numeric(tamanho_intervalos)
-alpha_bbas3_light <- numeric(tamanho_intervalos)
-  
-sim_bbas3_dirac <- numeric(tamanho_intervalos)
-alpha_bbas3_dirac <- numeric(tamanho_intervalos)
-
-# sim_bbas3_melhor <- numeric(tamanho_intervalos)
-tipo_bbas3_melhor <- numeric(tamanho_intervalos)
-
-for (b in seq_len(tamanho_intervalos)) {
-  
-  print("iteração")
-  print(b)
-  
-  vetor_bbas3 <- pegar_bbas3(blocos_30d_fim$inicio[b], blocos_30d_fim$fim[b])$valor
-  
-  # pareto kernel
-  # heavy tail alpha <= 2
-  # light tail alpha 2 < alpha < +inf
-  # delta de dirac alpha = +inf
-  # par = c(alpha, beta)
-  
-  # heavy tail
-  h.P.sim_heavy <- optim(par = c(0.5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
-  
-  # light tail 
-  h.P.sim_light <- optim(par = c(5, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
-  
-  # delta de dirac (1000 foi um valor chutado)
-  h.P.sim_dirac <- optim(par = c(1000, 1), fn = function(par) Entropy.P(x.var = vetor_bbas3, par = par))
-  
-  
-  sim_bbas3_heavy[b] <- h.P.sim_heavy$value
-  alpha_bbas3_heavy[b] <- h.P.sim_heavy$par[1]
-  
-  sim_bbas3_light[b] <- h.P.sim_light$value
-  alpha_bbas3_light[b] <- h.P.sim_light$par[1]
-  
-  sim_bbas3_dirac[b] <- h.P.sim_dirac$value
-  alpha_bbas3_dirac[b] <- h.P.sim_dirac$par[1]
-  
-  # comparo os 3 kernels candidados e tento achar o melhor fit
-  valores <- c(
-    heavy = h.P.sim_heavy$value,
-    light = h.P.sim_light$value,
-    dirac = h.P.sim_dirac$value
-  )
-  
-  #sim_bbas3_melhor[b] <- min(valores)
-  tipo_bbas3_melhor[b] <- names(valores)[which.min(valores)]
-
-}
-
-```
-
-```{r}
-
-blocos_30d_fim$tipo_melhor <- tipo_bbas3_melhor
-```
-
-```{r}
-
-blocos_30d_fim
-```
-
-```{r}
-
-write.csv(blocos_30d_fim, "bbas_janela_deslizante.csv", row.names = FALSE)
 ```

@@ -5,7 +5,7 @@ output: html_document
 
 ```{r}
 
-install.packages("psych")
+install.packages("readr")
 ```
 
 ```{r}
@@ -14,6 +14,8 @@ library(ggplot2)
 library(psych)
 library(readr)
 library(tidyr)
+library(dplyr)
+
 ```
 
 # Tabela 2 - Artigo Original
@@ -345,7 +347,55 @@ boxplot(df_size_200$Gaussian, df_table4$Gaussian,
 
 boxplot(df_size_200$Laplace, df_table4$Laplace,
         names = c("minha sim", "artigo"),
-        main = "Comparação - Laplace Size 200")
+        main = "Comparação - Laplace Size 200", 
+        outline = FALSE)
 ```
 
 Resultado - Parece que as simulações estão ok! Diferenças atribuídas à seed.
+
+```{r}
+
+install.packages("xtable")
+```
+
+```{r}
+
+library(xtable)
+```
+
+```{r}
+
+df_size_30 <- df_size_30  %>% select(-c(Laplace, Cauchy))
+df_size_30 <- df_size_30 %>% filter(!gl %in% c(2, 3, 4, 15, 20, 50))
+
+df_size_60 <- df_size_60  %>% select(-c(Laplace, Cauchy))
+df_size_60 <- df_size_60 %>% filter(!gl %in% c(2, 3, 4, 15, 20, 50))
+
+df_size_200 <- df_size_200  %>% select(-c(Laplace, Cauchy))
+df_size_200 <- df_size_200 %>% filter(!gl %in% c(2, 3, 4, 15, 20, 50))
+
+df_size_500 <- df_size_500  %>% select(-c(Laplace, Cauchy))
+df_size_500 <- df_size_500 %>% filter(!gl %in% c(2, 3, 4, 15, 20, 50))
+
+
+```
+
+```{r}
+
+print(xtable(df_size_30, caption = "Resultado Simulações de Monte Carol para 30 Samples"), type = "latex")
+```
+
+```{r}
+
+print(xtable(df_size_60, caption = "Resultado Simulações de Monte Carol para 60 Samples"), type = "latex")
+```
+
+```{r}
+
+print(xtable(df_size_200, caption = "Resultado Simulações de Monte Carol para 200 Samples"), type = "latex")
+```
+
+```{r}
+
+print(xtable(df_size_500, caption = "Resultado Simulações de Monte Carol para 500 Samples"), type = "latex")
+```

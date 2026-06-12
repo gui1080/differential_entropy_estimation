@@ -1,0 +1,111 @@
+---
+title: "Entropia por paciente"
+output: html_document
+---
+
+```{r setup}
+source("EntropyEstimationParetoKernel2.R")
+source("aplicacao_entropia_ecg.R")
+
+library(dplyr)
+```
+
+```{r configuracao}
+ARQUIVO_ECGS <- "ecgs_por_paciente.rds"
+ARQUIVO_RESULTADO <- "resultado_entropia_paciente.rds"
+
+# PACIENTE ID PARA ANALIZAR
+PACIENTE_IDS <- c("13243")
+
+# TRUE: mantem pacientes antigos no RDS e adiciona estes resultados.
+# TRUE: se o paciente ja existir no RDS final, substitui o resultado dele.
+APPEND_SE_EXISTIR <- TRUE
+SUBSTITUIR_PACIENTE_SE_EXISTIR <- TRUE
+
+DERIVACOES <- c(
+  "I", "II", "III",
+  "AVR", "AVL", "AVF",
+  "V1", "V2", "V3", "V4", "V5", "V6"
+)
+```
+
+```{r carregar-pacientes}
+ecgs_por_paciente <- readRDS(ARQUIVO_ECGS)
+
+pacientes_nao_encontrados <- setdiff(PACIENTE_IDS, names(ecgs_por_paciente))
+
+if (length(pacientes_nao_encontrados) > 0) {
+  stop(
+    "Paciente(s) nao encontrado(s) no RDS: ",
+    paste(pacientes_nao_encontrados, collapse = ", ")
+  )
+}
+
+PACIENTE_IDS
+```
+
+```{r calcular-entropia}
+calcular_entropia_lead <- function(ecg_paciente, patient_id, lead_nome) {
+  
+  print(lead)
+  
+  ecg_lead <- ecg_paciente %>%
+    filter(lead == lead_nome) %>%
+    select(time, mV) %>%
+    filter(complete.cases(.))
+
+  resultado <- calcular_entropia_ecg_alpha_otimo(ecg_lead)
+  resultado <- as.data.frame(resultado)
+  rownames(resultado) <- NULL
+
+  resultado %>%
+    mutate(
+      patient_id = patient_id,
+      lead = lead_nome,
+      .before = 1
+    )
+}
+
+calcular_entropia_paciente <- function(patient_id) {
+  ecg_paciente <- ecgs_por_paciente[[patient_id]]
+
+  DERIVACOES %>%
+    lapply(function(lead_nome) {
+      calcular_entropia_lead(ecg_paciente, patient_id, lead_nome)
+    }) %>%
+    bind_rows()
+}
+
+resultado_entropia_paciente <- PACIENTE_IDS %>%
+  lapply(calcular_entropia_paciente) %>%
+  bind_rows()
+
+resultado_entropia_paciente
+```
+
+```{r salvar-resultado}
+salvar_resultado_entropia <- function(novos_resultados) {
+  if (APPEND_SE_EXISTIR && file.exists(ARQUIVO_RESULTADO)) {
+    resultados_antigos <- readRDS(ARQUIVO_RESULTADO)
+
+    if (SUBSTITUIR_PACIENTE_SE_EXISTIR) {
+      resultados_antigos <- resultados_antigos %>%
+        filter(!patient_id %in% unique(novos_resultados$patient_id))
+    }
+
+    resultado_final <- bind_rows(resultados_antigos, novos_resultados)
+  } else {
+    resultado_final <- novos_resultados
+  }
+
+  saveRDS(resultado_final, ARQUIVO_RESULTADO)
+
+  resultado_final
+}
+
+resultado_entropia_paciente_final <- salvar_resultado_entropia(
+  resultado_entropia_paciente
+)
+
+ARQUIVO_RESULTADO
+```

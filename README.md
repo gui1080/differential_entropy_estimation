@@ -2,7 +2,9 @@
 
 Trabalho para a matéria de Tópicos Avançados 2 do Raul, Primeiro Semestre de 2026.
 
-Resumindo:
+# Arquivos:
+
+## Exploração
 
 * Arquivo *main.Rmd*: a simulação principal de monte carlo referente as das tabelas 2, 3, 4 e 5 do artigo original do Raul.
 
@@ -21,7 +23,17 @@ Resultados: pasta *simulacoes_04_06*.
 
 Resultados disso: na pasta *simulacoes\_28\_05*.
 
+## O que acabou indo pro poster, entrega da matéira em junho de 2026
 
+* Arquivo *bbas3.Rmd*: a análise final que foi pro poster referente a análise de bbas3 com janela fixa e gráficos.
+
+* Arquivo *entropia_paciente_saudavel.Rmd* e *entropia_paciente_saudavel.Rmd*: a contagem de tipos de caudas (leve e pesada) são as que foram pro poster, referente a paciente saudável e doente (no caso um paciente considerado muito doente e outro baseline simples).
+
+* Arquivo *entropia_paciente_cesar.Rmd* usa a base ecgs_por_paciente_cesar com um exemplo de paciente com infarto, com isquemia e um saudável para gerar análises de variância pelp exponencial da entropia com o objetivo de tentar agrupar pacientes.
+
+* Dentro da pasta dados_aplicacao tem 2 scripts: um que gera um .rds da base inteira pronta para consumo e um que le os diagnósticos.
+
+Usei esse script para gerar a base inteira que pode ser baixada como um .rds aqui nesse [link](https://unbbr-my.sharepoint.com/:u:/g/personal/261102693_aluno_unb_br/IQBH6h6WJq_HTJL4ZxYzFlO3ARfLx_D8DbvuNlWIgTaCA1U?e=2axQor)
 
 ## Dados utilizados para aplicação
 

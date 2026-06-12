@@ -1,3 +1,5 @@
+# janelas deslizantes 
+# alphas fixos
 calcular_entropia_janela_deslizante_ecg <- function(ecg_df, janela_tamanho = 30) {
   if (!exists("Entropy.P")) {
     source("EntropyEstimationParetoKernel2.R")
@@ -84,7 +86,8 @@ calcular_entropia_janela_deslizante_ecg <- function(ecg_df, janela_tamanho = 30)
   blocos_ecg
 }
 
-
+# janelas fixas 
+# otimizando alpha
 calcular_entropia_janela_deslizante_ecg_alpha_otimo <- function(
     ecg_df,
     janela_tamanho = 30,
@@ -120,6 +123,7 @@ calcular_entropia_janela_deslizante_ecg_alpha_otimo <- function(
   sim_ecg_otimo <- numeric(tamanho_intervalos)
   alpha_ecg_otimo <- numeric(tamanho_intervalos)
   beta_ecg_otimo <- numeric(tamanho_intervalos)
+  variancia_ecg <- numeric(tamanho_intervalos)
   tipo_ecg_melhor <- character(tamanho_intervalos)
   convergencia <- integer(tamanho_intervalos)
   
@@ -170,6 +174,7 @@ calcular_entropia_janela_deslizante_ecg_alpha_otimo <- function(
     sim_ecg_otimo[b] <- h.P.sim_otimo$value
     alpha_ecg_otimo[b] <- h.P.sim_otimo$par[1]
     beta_ecg_otimo[b] <- h.P.sim_otimo$par[2]
+    variancia_ecg[b] <- var(vetor_ecg, na.rm = TRUE)
     tipo_ecg_melhor[b] <- classificar_alpha(h.P.sim_otimo$par[1])
     convergencia[b] <- h.P.sim_otimo$convergence
   }
@@ -177,13 +182,90 @@ calcular_entropia_janela_deslizante_ecg_alpha_otimo <- function(
   blocos_ecg$sim_otimo <- sim_ecg_otimo
   blocos_ecg$alpha_otimo <- alpha_ecg_otimo
   blocos_ecg$beta_otimo <- beta_ecg_otimo
+  blocos_ecg$variancia <- variancia_ecg
   blocos_ecg$tipo_melhor <- tipo_ecg_melhor
   blocos_ecg$convergencia <- convergencia
   
   blocos_ecg
 }
 
+# serie completa
+# otimizando alpha
+calcular_entropia_ecg_alpha_otimo <- function(
+    ecg_df,
+    par_inicial = c(alpha = 5, beta = 1),
+    alpha_dirac_limite = 1000
+) {
+  if (!exists("Entropy.P")) {
+    source("EntropyEstimationParetoKernel2.R")
+  }
+  
+  if (!all(c("time", "mV") %in% names(ecg_df))) {
+    stop("O dataframe precisa ter as colunas 'time' e 'mV'.")
+  }
 
+  if (nrow(ecg_df) < 2) {
+    stop("O dataframe precisa ter pelo menos duas linhas.")
+  }
+  
+  classificar_alpha <- function(alpha) {
+    if (is.infinite(alpha) || alpha >= alpha_dirac_limite) {
+      return("dirac")
+    }
+    
+    if (alpha <= 2) {
+      return("heavy")
+    }
+    
+    "light"
+  }
+  
+  vetor_ecg <- ecg_df$mV
+  penalidade <- 1e100
+  
+  objetivo <- function(par) {
+    alpha <- par[1]
+    beta <- par[2]
+    
+    if (!is.finite(alpha) || !is.finite(beta) || alpha <= 0 || beta <= 0) {
+      return(penalidade)
+    }
+    
+    valor <- tryCatch(
+      Entropy.P(x.var = vetor_ecg, par = c(alpha, beta)),
+      error = function(e) penalidade
+    )
+    
+    if (!is.finite(valor)) {
+      return(penalidade)
+    }
+    
+    valor
+  }
+  
+  h.P.sim_otimo <- optim(
+    par = par_inicial,
+    fn = objetivo,
+    method = "L-BFGS-B",
+    lower = c(1e-8, 1e-8),
+    upper = c(alpha_dirac_limite, Inf)
+  )
+  
+  data.frame(
+    bloco = 1,
+    inicio = ecg_df$time[1],
+    fim = ecg_df$time[nrow(ecg_df)],
+    sim_otimo = h.P.sim_otimo$value,
+    alpha_otimo = h.P.sim_otimo$par[1],
+    beta_otimo = h.P.sim_otimo$par[2],
+    variancia = var(vetor_ecg, na.rm = TRUE),
+    tipo_melhor = classificar_alpha(h.P.sim_otimo$par[1]),
+    convergencia = h.P.sim_otimo$convergence
+  )
+}
+
+# janela deslizante
+# alphas fixos
 calcular_entropia_janela_deslizante_ecg_com_sobreposicao <- function(ecg_df, janela_tamanho = 30) {
   if (!exists("Entropy.P")) {
     source("EntropyEstimationParetoKernel2.R")
@@ -267,7 +349,8 @@ calcular_entropia_janela_deslizante_ecg_com_sobreposicao <- function(ecg_df, jan
   blocos_ecg
 }
 
-
+# janela deslizante
+# otimizando alpha
 calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao <- function(
     ecg_df,
     janela_tamanho = 30,
@@ -286,7 +369,7 @@ calcular_entropia_janela_deslizante_ecg_alpha_otimo_com_sobreposicao <- function
     stop("O tamanho da janela precisa ser maior que zero.")
   }
 
-  tamanho_intervalos <- nrow(ecg_df) - janela_tamanho + 1
+  tamanho_intervalos <- nrow(ecg_df) - janela_tamanho + 1 # tamanho passo
 
   if (tamanho_intervalos < 1) {
     stop("O dataframe tem menos linhas que o tamanho da janela.")

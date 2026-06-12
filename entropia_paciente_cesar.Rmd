@@ -1,0 +1,655 @@
+---
+title: "entropia_paciente_doente"
+output: html_document
+---
+
+### RECORD_REL \<- "records100/06000/00006_lr" -\> paciente saudável
+
+patient_id: 19005
+
+ecg_id: 6
+
+idade: 18
+
+sexo: 1
+
+arquivo ECG: records100/00000/00006_lr
+
+```{r}
+source("EntropyEstimationParetoKernel2.R")
+source("aplicacao_entropia_ecg.R")
+library(readr)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+
+dados <- readRDS("ecgs_por_paciente_cesar.rds")
+```
+
+```{r}
+unique(dados$infarto$lead)
+```
+
+# Infarto
+
+```{r}
+
+ecg_infarto_lead_AVF <- dados$infarto %>%
+  filter(lead == "AVF")
+ecg_infarto_lead_AVL <- dados$infarto %>%
+  filter(lead == "AVL")
+ecg_infarto_lead_AVR <- dados$infarto %>%
+  filter(lead == "AVR")
+
+ecg_infarto_lead_I <- dados$infarto %>%
+  filter(lead == "I")
+ecg_infarto_lead_II <- dados$infarto %>%
+  filter(lead == "II")
+ecg_infarto_lead_III <- dados$infarto %>%
+  filter(lead == "III")
+
+ecg_infarto_lead_V1 <- dados$infarto %>%
+  filter(lead == "V1")
+ecg_infarto_lead_V2 <- dados$infarto %>%
+  filter(lead == "V2")
+ecg_infarto_lead_V3 <- dados$infarto %>%
+  filter(lead == "V3")
+ecg_infarto_lead_V4 <- dados$infarto %>%
+  filter(lead == "V4")
+ecg_infarto_lead_V5 <- dados$infarto %>%
+  filter(lead == "V5")
+ecg_infarto_lead_V6 <- dados$infarto %>%
+  filter(lead == "V6")
+
+ecg_infarto_lead_AVF$lead <- NULL
+ecg_infarto_lead_AVL$lead <- NULL
+ecg_infarto_lead_AVR$lead <- NULL
+ecg_infarto_lead_I$lead <- NULL
+ecg_infarto_lead_II$lead <- NULL
+ecg_infarto_lead_III$lead <- NULL
+ecg_infarto_lead_V1$lead <- NULL
+ecg_infarto_lead_V2$lead <- NULL
+ecg_infarto_lead_V3$lead <- NULL
+ecg_infarto_lead_V4$lead <- NULL
+ecg_infarto_lead_V5$lead <- NULL
+ecg_infarto_lead_V6$lead <- NULL
+
+```
+
+```{r}
+
+ecg_infarto_lead_V6
+```
+
+```{r}
+
+resultado_avf_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_AVF
+)
+resultado_avl_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_AVL
+)
+resultado_avr_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_AVR
+)
+
+# ------------------
+resultado_I_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_I
+)
+resultado_II_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_II
+)
+resultado_III_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_III
+)
+
+# ------------------
+resultado_V1_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_V1
+)
+resultado_V2_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_V2
+)
+resultado_V3_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_V3
+)
+resultado_V4_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_V4
+)
+resultado_V5_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_V5
+)
+resultado_V6_infarto_otimo_saudavel <- calcular_entropia_ecg_alpha_otimo(
+  ecg_infarto_lead_V6
+)
+```
+
+```{r}
+
+resultado_V6_infarto_otimo_saudavel
+```
+
+# Isquemia
+
+```{r}
+
+ecg_isquemia_lead_AVF <- dados$isquemia %>%
+  filter(lead == "AVF")
+ecg_isquemia_lead_AVL <- dados$isquemia %>%
+  filter(lead == "AVL")
+ecg_isquemia_lead_AVR <- dados$isquemia %>%
+  filter(lead == "AVR")
+
+ecg_isquemia_lead_I <- dados$isquemia %>%
+  filter(lead == "I")
+ecg_isquemia_lead_II <- dados$isquemia %>%
+  filter(lead == "II")
+ecg_isquemia_lead_III <- dados$isquemia %>%
+  filter(lead == "III")
+
+ecg_isquemia_lead_V1 <- dados$isquemia %>%
+  filter(lead == "V1")
+ecg_isquemia_lead_V2 <- dados$isquemia %>%
+  filter(lead == "V2")
+ecg_isquemia_lead_V3 <- dados$isquemia %>%
+  filter(lead == "V3")
+ecg_isquemia_lead_V4 <- dados$isquemia %>%
+  filter(lead == "V4")
+ecg_isquemia_lead_V5 <- dados$isquemia %>%
+  filter(lead == "V5")
+ecg_isquemia_lead_V6 <- dados$isquemia %>%
+  filter(lead == "V6")
+
+ecg_isquemia_lead_AVF$lead <- NULL
+ecg_isquemia_lead_AVL$lead <- NULL
+ecg_isquemia_lead_AVR$lead <- NULL
+ecg_isquemia_lead_I$lead <- NULL
+ecg_isquemia_lead_II$lead <- NULL
+ecg_isquemia_lead_III$lead <- NULL
+ecg_isquemia_lead_V1$lead <- NULL
+ecg_isquemia_lead_V2$lead <- NULL
+ecg_isquemia_lead_V3$lead <- NULL
+ecg_isquemia_lead_V4$lead <- NULL
+ecg_isquemia_lead_V5$lead <- NULL
+ecg_isquemia_lead_V6$lead <- NULL
+
+```
+
+```{r}
+
+resultado_avf_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_AVF
+)
+resultado_avl_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_AVL
+)
+resultado_avr_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_AVR
+)
+
+# ------------------
+resultado_I_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_I
+)
+resultado_II_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_II
+)
+resultado_III_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_III
+)
+
+# ------------------
+resultado_V1_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_V1
+)
+resultado_V2_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_V2
+)
+resultado_V3_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_V3,
+)
+resultado_V4_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_V4
+)
+resultado_V5_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_V5
+)
+resultado_V6_isquemia_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_isquemia_lead_V6
+)
+
+```
+
+# Normal
+
+```{r}
+
+ecg_normal_lead_AVF <- dados$normal %>%
+  filter(lead == "AVF")
+ecg_normal_lead_AVL <- dados$normal %>%
+  filter(lead == "AVL")
+ecg_normal_lead_AVR <- dados$normal %>%
+  filter(lead == "AVR")
+
+ecg_normal_lead_I <- dados$normal %>%
+  filter(lead == "I")
+ecg_normal_lead_II <- dados$normal %>%
+  filter(lead == "II")
+ecg_normal_lead_III <- dados$normal %>%
+  filter(lead == "III")
+
+ecg_normal_lead_V1 <- dados$normal %>%
+  filter(lead == "V1")
+ecg_normal_lead_V2 <- dados$normal %>%
+  filter(lead == "V2")
+ecg_normal_lead_V3 <- dados$normal %>%
+  filter(lead == "V3")
+ecg_normal_lead_V4 <- dados$normal %>%
+  filter(lead == "V4")
+ecg_normal_lead_V5 <- dados$normal %>%
+  filter(lead == "V5")
+ecg_normal_lead_V6 <- dados$normal %>%
+  filter(lead == "V6")
+
+ecg_normal_lead_AVF$lead <- NULL
+ecg_normal_lead_AVL$lead <- NULL
+ecg_normal_lead_AVR$lead <- NULL
+ecg_normal_lead_I$lead <- NULL
+ecg_normal_lead_II$lead <- NULL
+ecg_normal_lead_III$lead <- NULL
+ecg_normal_lead_V1$lead <- NULL
+ecg_normal_lead_V2$lead <- NULL
+ecg_normal_lead_V3$lead <- NULL
+ecg_normal_lead_V4$lead <- NULL
+ecg_normal_lead_V5$lead <- NULL
+ecg_normal_lead_V6$lead <- NULL
+
+```
+
+```{r}
+
+resultado_avf_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_AVF
+)
+resultado_avl_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_AVL
+)
+resultado_avr_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_AVR
+)
+
+# ------------------
+resultado_I_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_I
+)
+resultado_II_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_II
+)
+resultado_III_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_III
+)
+
+# ------------------
+resultado_V1_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_V1
+)
+resultado_V2_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_V2
+)
+resultado_V3_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_V3
+)
+resultado_V4_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_V4
+)
+resultado_V5_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_V5
+)
+resultado_V6_normal_otimo <- calcular_entropia_ecg_alpha_otimo(
+  ecg_normal_lead_V6
+)
+
+```
+
+# Visualizacao nova
+
+```{r, fig.width=7, fig.height=6}
+
+resultados_por_paciente <- list(
+  Infarto = list(
+    AVF = resultado_avf_infarto_otimo_saudavel,
+    AVL = resultado_avl_infarto_otimo_saudavel,
+    AVR = resultado_avr_infarto_otimo_saudavel,
+    I = resultado_I_infarto_otimo_saudavel,
+    II = resultado_II_infarto_otimo_saudavel,
+    III = resultado_III_infarto_otimo_saudavel,
+    V1 = resultado_V1_infarto_otimo_saudavel,
+    V2 = resultado_V2_infarto_otimo_saudavel,
+    V3 = resultado_V3_infarto_otimo_saudavel,
+    V4 = resultado_V4_infarto_otimo_saudavel,
+    V5 = resultado_V5_infarto_otimo_saudavel,
+    V6 = resultado_V6_infarto_otimo_saudavel
+  ),
+  Isquemia = list(
+    AVF = resultado_avf_isquemia_otimo,
+    AVL = resultado_avl_isquemia_otimo,
+    AVR = resultado_avr_isquemia_otimo,
+    I = resultado_I_isquemia_otimo,
+    II = resultado_II_isquemia_otimo,
+    III = resultado_III_isquemia_otimo,
+    V1 = resultado_V1_isquemia_otimo,
+    V2 = resultado_V2_isquemia_otimo,
+    V3 = resultado_V3_isquemia_otimo,
+    V4 = resultado_V4_isquemia_otimo,
+    V5 = resultado_V5_isquemia_otimo,
+    V6 = resultado_V6_isquemia_otimo
+  ),
+  Normal = list(
+    AVF = resultado_avf_normal_otimo,
+    AVL = resultado_avl_normal_otimo,
+    AVR = resultado_avr_normal_otimo,
+    I = resultado_I_normal_otimo,
+    II = resultado_II_normal_otimo,
+    III = resultado_III_normal_otimo,
+    V1 = resultado_V1_normal_otimo,
+    V2 = resultado_V2_normal_otimo,
+    V3 = resultado_V3_normal_otimo,
+    V4 = resultado_V4_normal_otimo,
+    V5 = resultado_V5_normal_otimo,
+    V6 = resultado_V6_normal_otimo
+  )
+)
+
+montar_visualizacao_entropia_variancia <- function(resultado_df, paciente, derivacao) {
+  resultado_df <- as.data.frame(resultado_df)
+  
+  if (!all(c("sim_otimo", "variancia") %in% names(resultado_df))) {
+    stop("Os resultados precisam ter as colunas 'sim_otimo' e 'variancia'. Rode novamente os chunks de entropia.")
+  }
+  
+  data.frame(
+    paciente = paciente,
+    derivacao = derivacao,
+    variancia = resultado_df$variancia,
+    exp_entropia = exp(resultado_df$sim_otimo),
+    tipo_melhor = resultado_df$tipo_melhor
+  )
+}
+
+visualizacao_nova <- do.call(
+  rbind,
+  unlist(
+    lapply(names(resultados_por_paciente), function(paciente) {
+      lapply(names(resultados_por_paciente[[paciente]]), function(derivacao) {
+        montar_visualizacao_entropia_variancia(
+          resultados_por_paciente[[paciente]][[derivacao]],
+          paciente,
+          derivacao
+        )
+      })
+    }),
+    recursive = FALSE
+  )
+)
+
+visualizacao_nova <- visualizacao_nova %>%
+  filter(
+    is.finite(variancia),
+    is.finite(exp_entropia),
+    variancia > 0
+  )
+
+curva_gaussiana <- data.frame(
+  variancia = seq(
+    min(visualizacao_nova$variancia, na.rm = TRUE),
+    max(visualizacao_nova$variancia, na.rm = TRUE),
+    length.out = 300
+  )
+)
+curva_gaussiana$exp_entropia <- sqrt(2 * pi * exp(1) * curva_gaussiana$variancia)
+
+ggplot(visualizacao_nova, aes(x = variancia, y = exp_entropia, color = paciente)) +
+  geom_line(
+    data = curva_gaussiana,
+    aes(x = variancia, y = exp_entropia),
+    inherit.aes = FALSE,
+    color = "gray25",
+    linewidth = 0.7
+  ) +
+  geom_point(size = 2.2, alpha = 0.9) +
+  scale_color_manual(
+    name = "Paciente",
+    values = c(
+      Infarto = "black",
+      Isquemia = "red",
+      Normal = "blue"
+    )
+  ) +
+  labs(
+    title = "Análise de ECGs",
+    x = expression(sigma^2),
+    y = expression(exp(H(f)))
+  ) +
+  theme_gray(base_size = 16) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 18),
+    axis.text = element_text(size = 14)
+  )
+
+```
+
+# Resto da analise
+
+```{r}
+
+
+```
+
+```{r}
+
+sum(resultado_avf_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_avl_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_avr_otimo_saudavel$tipo_melhor == "heavy")
+
+sum(resultado_I_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_II_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_III_otimo_saudavel$tipo_melhor == "heavy")
+
+sum(resultado_V6_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V5_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V4_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V3_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V2_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V1_otimo_saudavel$tipo_melhor == "heavy")
+```
+
+```{r}
+sum(resultado_avf_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_avl_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_avr_otimo_saudavel$tipo_melhor == "light")
+
+sum(resultado_I_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_II_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_III_otimo_saudavel$tipo_melhor == "light")
+
+sum(resultado_V6_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_V5_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_V4_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_V3_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_V2_otimo_saudavel$tipo_melhor == "light")
+sum(resultado_V1_otimo_saudavel$tipo_melhor == "light")
+```
+
+# Visualizacao por tipo de cauda
+
+```{r, fig.width=16, fig.height=10}
+derivacoes_saudavel <- list(
+  I = list(
+    ecg = ecg_record_6_lead_I,
+    resultado = resultado_I_otimo_saudavel
+  ),
+  II = list(
+    ecg = ecg_record_6_lead_II,
+    resultado = resultado_II_otimo_saudavel
+  ),
+  III = list(
+    ecg = ecg_record_6_lead_III,
+    resultado = resultado_III_otimo_saudavel
+  ),
+  AVR = list(
+    ecg = ecg_record_6_lead_AVR,
+    resultado = resultado_avr_otimo_saudavel
+  ),
+  AVL = list(
+    ecg = ecg_record_6_lead_AVL,
+    resultado = resultado_avl_otimo_saudavel
+  ),
+  AVF = list(
+    ecg = ecg_record_6_lead_AVF,
+    resultado = resultado_avf_otimo_saudavel
+  ),
+  V1 = list(
+    ecg = ecg_record_6_lead_V1,
+    resultado = resultado_V1_otimo_saudavel
+  ),
+  V2 = list(
+    ecg = ecg_record_6_lead_V2,
+    resultado = resultado_V2_otimo_saudavel
+  ),
+  V3 = list(
+    ecg = ecg_record_6_lead_V3,
+    resultado = resultado_V3_otimo_saudavel
+  ),
+  V4 = list(
+    ecg = ecg_record_6_lead_V4,
+    resultado = resultado_V4_otimo_saudavel
+  ),
+  V5 = list(
+    ecg = ecg_record_6_lead_V5,
+    resultado = resultado_V5_otimo_saudavel
+  ),
+  V6 = list(
+    ecg = ecg_record_6_lead_V6,
+    resultado = resultado_V6_otimo_saudavel
+  )
+)
+
+atribuir_tipo_melhor <- function(ecg_df, resultado_df, derivacao) {
+  ecg_df <- as.data.frame(ecg_df)
+  resultado_df <- as.data.frame(resultado_df)
+
+  partes <- lapply(seq_len(nrow(resultado_df)), function(i) {
+    pontos <- ecg_df[
+      ecg_df$time >= resultado_df$inicio[i] &
+        ecg_df$time <= resultado_df$fim[i],
+      c("time", "mV")
+    ]
+
+    if (nrow(pontos) == 0) {
+      return(NULL)
+    }
+
+    pontos$derivacao <- derivacao
+    pontos$bloco <- resultado_df$bloco[i]
+    pontos$tipo_melhor <- resultado_df$tipo_melhor[i]
+    pontos
+  })
+
+  do.call(rbind, partes)
+}
+
+ecg_saudavel_plot <- do.call(
+  rbind,
+  Map(
+    function(nome, item) {
+      atribuir_tipo_melhor(item$ecg, item$resultado, nome)
+    },
+    names(derivacoes_saudavel),
+    derivacoes_saudavel
+  )
+)
+
+ecg_saudavel_plot$derivacao <- factor(
+  ecg_saudavel_plot$derivacao,
+  levels = c("I", "II", "III", "AVR", "AVL", "AVF", "V1", "V2", "V3", "V4", "V5", "V6")
+)
+ecg_saudavel_plot$tipo_melhor <- factor(
+  ecg_saudavel_plot$tipo_melhor,
+  levels = c("heavy", "light", "dirac")
+)
+
+ggplot(
+  ecg_saudavel_plot,
+  aes(
+    x = time,
+    y = mV,
+    color = tipo_melhor,
+    group = interaction(derivacao, bloco)
+  )
+) +
+  geom_line(linewidth = 0.35) +
+  facet_wrap(~derivacao, ncol = 2, scales = "free_y") +
+  scale_color_manual(
+    name = "Tail type",
+    values = c(
+      heavy = "#ff2f3f",
+      light = "#2f7fad",
+      dirac = "#808080"
+    ),
+    drop = TRUE
+  ) +
+  labs(
+    title = "Normal",
+    x = "time",
+    y = "mV"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, hjust = 0),
+    plot.title.position = "plot",
+    strip.text = element_text(face = "bold", size = 12),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+  )
+```
+
+```{r}
+resultado_V6_otimo_saudavel
+```
+
+```{r}
+
+sum(resultado_V6_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V5_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V4_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V3_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V2_otimo_saudavel$tipo_melhor == "heavy")
+sum(resultado_V1_otimo_saudavel$tipo_melhor == "heavy")
+```
+
+```{r}
+
+write.csv(resultado_avf_otimo_saudavel_fim, "resultado_avf_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_avl_otimo_saudavel_fim, "resultado_avl_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_avr_otimo_saudavel_fim, "resultado_avr_otimo_saudavel_janela_100.csv", row.names = FALSE)
+
+
+write.csv(resultado_I_otimo_saudavel_fim, "resultado_I_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_II_otimo_saudavel_fim, "resultado_II_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_III_otimo_saudavel_fim, "resultado_III_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_V1_otimo_saudavel_fim, "resultado_V1_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_V2_otimo_saudavel_fim, "resultado_V2_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_V3_otimo_saudavel_fim, "resultado_V3_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_V4_otimo_saudavel_fim, "resultado_V4_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_V5_otimo_saudavel_fim, "resultado_V5_otimo_saudavel_janela_100.csv", row.names = FALSE)
+write.csv(resultado_V6_otimo_saudavel_fim, "resultado_V6_otimo_saudavel_janela_100.csv", row.names = FALSE)
+```
+
+```{r}
+
+```

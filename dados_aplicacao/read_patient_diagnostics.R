@@ -12,7 +12,7 @@ library(jsonlite)
 library(tidyr)
 
 # ── 0. Configuration ─────────────────────────────────────────
-BASE_PATH <- "c:/Users/cesar/Downloads/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3/"
+BASE_PATH <- "C:/Users/gbp19/Documents/differential_entropy_estimation-master/dados_ecg"
 
 
 # ── 1. Load source files ─────────────────────────────────────
@@ -84,3 +84,11 @@ cat("\n")
 
 cat("=== First 10 rows ===\n")
 print(head(final_df, 10))
+
+output_dir <- file.path(dirname(BASE_PATH), "resultados_ecg")
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+output_path <- file.path(output_dir, "patient_diagnostics.csv")
+write_csv(final_df, output_path)
+
+cat("\nCSV saved to:", output_path, "\n")
