@@ -23,7 +23,9 @@ Resultados: pasta *simulacoes_04_06*.
 
 Resultados disso: na pasta *simulacoes\_28\_05*.
 
-## O que acabou indo pro poster, entrega da matéira em junho de 2026
+Até aqui são os resultados das simulações de Monte Carlo da parte teórica do trabalho.
+
+## O que acabou indo pro poster, entrega da matéria em junho de 2026
 
 * Arquivo *bbas3.Rmd*: a análise final que foi pro poster referente a análise de bbas3 com janela fixa e gráficos.
 
@@ -31,7 +33,9 @@ Resultados disso: na pasta *simulacoes\_28\_05*.
 
 * Arquivo *entropia_paciente_cesar.Rmd* usa a base ecgs_por_paciente_cesar com um exemplo de paciente com infarto, com isquemia e um saudável para gerar análises de variância pelp exponencial da entropia com o objetivo de tentar agrupar pacientes.
 
-* Dentro da pasta dados_aplicacao tem 2 scripts: um que gera um .rds da base inteira pronta para consumo e um que le os diagnósticos.
+* Dentro da pasta *dados_aplicacao* tem 2 scripts: um que gera um .rds da base inteira pronta para consumo e um que le os diagnósticos.
+
+* O arquivo *entropia_por_paciente* gera a entropia de um paciente e salva num arquivo chamado resultado_entropia_paciente.rds sempre dando append.
 
 Usei esse script para gerar a base inteira que pode ser baixada como um .rds aqui nesse [link](https://unbbr-my.sharepoint.com/:u:/g/personal/261102693_aluno_unb_br/IQBH6h6WJq_HTJL4ZxYzFlO3ARfLx_D8DbvuNlWIgTaCA1U?e=2axQor)
 
